@@ -1,0 +1,102 @@
+\documentclass[a4paper, 11pt]{article}
+
+% --- Pakiety do obsługi języka polskiego ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{graphicx}
+
+% --- Ustawienia strony ---
+\usepackage[a4paper, margin=1in]{geometry}
+
+% --- Lepsza kontrola nad listami (opcjonalnie, ale polecane) ---
+\usepackage{enumitem}
+
+% --- Tytuł dokumentu ---
+\title{Specyfikacja ekranów i funkcjonalności LekturAI}
+\date{} % Usuwa datę
+
+\begin{document}
+
+\maketitle
+\tableofcontents % Automatyczny spis treści
+\newpage
+
+\section{Login Screen}
+\begin{itemize}
+    \item Logo "LekturAI"
+    \item \textbf{Textfield:} email
+    \item \textbf{Textfield:} hasło
+    \item \textbf{Button:} zaloguj się
+    \item \textbf{Button:} zarejestruj się
+\end{itemize}
+\includegraphics[width=0.5\textwidth, keepaspectratio]{images/login_screen.jpg}
+
+
+\section{View / Edit Profile Screen}
+\begin{itemize}
+    \item Liczba punktów
+    \item Zmiana hasła:
+        \begin{itemize}
+            \item stare hasło
+            \item nowe hasło
+            \item powtórz nowe hasło
+        \end{itemize}
+    \item Wybór swojego Miasta
+    \item Wybór swojej szkoły z listy bazy danych.
+    \item Wpisanie numeru klasy (np. 3, 4b).
+    \item Ustawianie częstotliwości powiadomień (przypomnień o nauce).
+\end{itemize}
+
+\subsection{Prerequisities}
+\begin{itemize}
+    \item Baza danych szkół - jest plik otwarty, można pobrać i wrzucić do bazy danych.
+    \item Szukanie szkół po mieście i nazwie.
+\end{itemize}
+
+\section{Test z lektur screen}
+\begin{itemize}
+    \item Wybór lektury z listy (po nazwie).
+    \item Wybór zakresu rozdziałów.
+    \item Test w formie pytań zamkniętych i otwartych.
+    \item Przycisk "zakończ" $\rightarrow$ przekierowuje do ekranu wyników, gdzie jest wynik procentowy i wszystkie odpowiedzi poprawione, z komentarzami, dlaczego tyle punktów.
+\end{itemize}
+
+\section{Rozwiąż zadanie maturalne Screen}
+\begin{itemize}
+    \item Wybór epoki.
+    \item Losowane pytanie ze zbioru pytań.
+    \item Przycisk "zakończ" $\rightarrow$ ekran końcowy.
+\end{itemize}
+
+\section{Asystent rozprawki Screen}
+\begin{itemize}
+    \item \textbf{Textfield:} Polecenie (Temat).
+    \item \textbf{Checkboxy:} wybór kontekstów, liczby argumentów itp.
+    \item Przycisk "znajdź" $\rightarrow$ pokazuje listę kontekstów, argumentów itp.
+\end{itemize}
+
+\section{Historia testów, pytań Screen}
+\begin{itemize}
+    \item Lista rozwiązanych testów i pytań.
+    \item Można wejść w test i zobaczyć listę pytań, swoich odpowiedzi oraz błędów.
+\end{itemize}
+
+\section{Home Screen}
+\begin{itemize}
+    \item Menu nawigacyjne:
+        \begin{itemize}
+            \item Test z lektur
+            \item Zadania maturalne
+            \item Asystent Rozprawki
+            \item Historia pytań
+            \item Konto
+        \end{itemize}
+    \item Strike nauki: 23 dni
+    \item Wykres z punktami lub czasem (np. ile minut poświęcono na naukę każdego dnia w ostatnim tygodniu).
+    \item \textbf{Floating Button:} ChatBot
+\end{itemize}
+
+\includegraphics[width=0.5\textwidth, keepaspectratio]{images/home_screen.jpg}
+
+\end{document}
