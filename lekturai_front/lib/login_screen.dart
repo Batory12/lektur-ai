@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:lekturai_front/widgets/common_scaffold.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+    return CommonScaffold(
+      title: "Login",
+      showDrawer: false,
       body: Center(
         child: SizedBox(
           width: 200,
@@ -25,7 +27,7 @@ class LoginScreen extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       // Navigate to the second screen
-                      Navigator.pushNamed(context, '/second');
+                      Navigator.pushNamed(context, '/home');
                     },
                     child: const Text('Log in'),
                   ),
@@ -33,7 +35,7 @@ class LoginScreen extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       // Navigate to the second screen
-                      Navigator.pushNamed(context, '/second');
+                      Navigator.pushNamed(context, '/home');
                     },
                     child: const Text('Register'),
                   ),
