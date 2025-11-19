@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lekturai_front/placeholder_screen.dart';
+import 'package:lekturai_front/questions_screen.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
@@ -21,7 +22,7 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
-        '/zlektur': (context) => const PlaceholderScreen(),
+        '/zlektur': (context) => const QuestionsScreen(),
         '/zmatur': (context) => const PlaceholderScreen(),
         '/rozprawka': (context) => const PlaceholderScreen(),
         '/historia': (context) => const PlaceholderScreen(),
