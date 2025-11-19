@@ -39,10 +39,9 @@ JWT powinien zawierać informacje jednoznacznie identyfikujące użytkownika, ż
 -> Zwraca losowe zadanie maturalne w formacie
 {excercise_id: Int, excercise_title: String, excercise_text: String}
 
-### POST /matura_ex
+### POST /matura_ex/:[excercise_id: Int]
 #### Request Body:
 {
-    excercise_id: Int,
     user_answer: String
 }
 #### Response
@@ -65,10 +64,16 @@ Zwraca listę szkół, gdzie każda szkoła ma format:
     school_id: Int,
     school_name: String
 }
-## POST /schools?(school_id: Int)
+## POST /schools
+{
+    school_id: Int
+}
 Zapisanie danego użytkownika do danej szkoły. school_id w query parameter.
 
-## POST /class?(classname: String)
+## POST /class
+{
+    classname: String
+}
 Przypisuje ucznia do danej klasy jeśli ma wybraną szkołę.
 Np klasa 4a.
 
@@ -78,9 +83,8 @@ Np klasa 4a.
 Creates new conversation for user with chat.
 Response -> conversation_id
 
-## POST /chat/message
+## POST /chat/:[conversation_id: Int]
 {
-    conversation_id: Int,
     message: String
 }
 Response -> {
