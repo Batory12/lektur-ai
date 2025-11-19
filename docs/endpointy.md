@@ -17,6 +17,17 @@ JWT powinien zawierać informacje jednoznacznie identyfikujące użytkownika, ż
 /readings\_history?(dayfrom : datetime, dayto : datetime) \-\> List\[eval\_summary, eval\] \~może eval\_points? nwm  
 /exercise\_history \~ podobnie
 
+### GET /recent_questions
+
+response -> array of questions{
+    type: String ("reading", "matura", "otwarte", "zamkniete"),
+    title: String,
+    description: String,
+    user_answer: String,
+    feedback: String,
+    grade: Float
+}
+
 # Generacja zadań z lektur
 
 /reading\_ex/\[reading\_name : String\]?(to\_chapter : Int) \-\> excercise\_title, excercise\_text  
@@ -50,7 +61,7 @@ JWT powinien zawierać informacje jednoznacznie identyfikujące użytkownika, ż
     user_answer: String,
     grade: Float,
     feedback: String,
-    answer_key: String
+    answer_key: String // klucz odpowiedzi maturalny
 }
 
 # Lista szkół, klas
