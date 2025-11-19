@@ -17,10 +17,92 @@ JWT powinien zawierać informacje jednoznacznie identyfikujące użytkownika, ż
 /readings\_history?(dayfrom : datetime, dayto : datetime) \-\> List\[eval\_summary, eval\] \~może eval\_points? nwm  
 /exercise\_history \~ podobnie
 
-# Generacja zadań
+### GET /recent_questions
+
+response -> array of questions{
+    type: String ("reading", "matura", "otwarte", "zamkniete"),
+    title: String,
+    description: String,
+    user_answer: String,
+    feedback: String,
+    grade: Float
+}
+
+# Generacja zadań z lektur
 
 /reading\_ex/\[reading\_name : String\]?(to\_chapter : Int) \-\> excercise\_title, excercise\_text  
 /exam\_ex \~ w sumie nie wiem jak kategoryzować te zadania na razie
+
+### Ocenianie zadania z lektury POST /reading_ex
+{
+    excercise_title: String,
+    excercise_text: String,
+    user_answer: String
+}
+#### Response
+{
+    grade: float,
+    feedback: String
+}
+
+# Rozwiązywanie zadań maturalnych
+### GET /matura_ex 
+-> Zwraca losowe zadanie maturalne w formacie
+{excercise_id: Int, excercise_title: String, excercise_text: String}
+
+### POST /matura_ex/:[excercise_id: Int]
+#### Request Body:
+{
+    user_answer: String
+}
+#### Response
+{
+    excercise_id: Int,
+    user_answer: String,
+    grade: Float,
+    feedback: String,
+    answer_key: String // klucz odpowiedzi maturalny
+}
+
+# Lista szkół, klas
+User najpierw wybiera Miejscowość w której jest jego szkoła
+## GET /cities?(name_so_far: String) -> List<City>
+Podpowiadanie wyboru miejscowości szkoły
+
+## GET /schools?(city: String) -> List<School>
+Zwraca listę szkół, gdzie każda szkoła ma format:
+{
+    school_id: Int,
+    school_name: String
+}
+## POST /schools
+{
+    school_id: Int
+}
+Zapisanie danego użytkownika do danej szkoły. school_id w query parameter.
+
+## POST /class
+{
+    classname: String
+}
+Przypisuje ucznia do danej klasy jeśli ma wybraną szkołę.
+Np klasa 4a.
+
+
+# ChatBot
+## POST /chat/new
+Creates new conversation for user with chat.
+Response -> conversation_id
+
+## POST /chat/:[conversation_id: Int]
+{
+    message: String
+}
+Response -> {
+    conversation_id: Int,
+    message: String
+}
+
 
 # Asystent rozprawki
 
