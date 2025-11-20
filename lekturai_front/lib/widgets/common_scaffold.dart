@@ -1,5 +1,6 @@
 // lib/widgets/app_scaffold.dart
 import 'package:flutter/material.dart';
+import 'package:lekturai_front/widgets/responsive_center.dart';
 
 class CommonScaffold extends StatelessWidget {
   final String title;
@@ -13,7 +14,10 @@ class CommonScaffold extends StatelessWidget {
     required this.body,
     this.floatingActionButton,
     this.showDrawer = true,
+    this.useResponsiveLayout = true,
   });
+
+  final bool useResponsiveLayout;
 
   @override
   Widget build(BuildContext context) {
@@ -74,11 +78,18 @@ class CommonScaffold extends StatelessWidget {
                       Navigator.pushNamed(context, '/historia');
                     },
                   ),
+                  ListTile(
+                    leading: Icon(Icons.person),
+                    title: Text('Profil'),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/profile');
+                    },
+                  ),
                 ],
               ),
             )
           : null,
-      body: body,
+      body: useResponsiveLayout ? ResponsiveCenter(child: body) : body,
       floatingActionButton: floatingActionButton,
     );
   }
