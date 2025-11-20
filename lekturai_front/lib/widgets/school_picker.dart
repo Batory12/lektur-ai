@@ -3,7 +3,20 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:lekturai_front/api/profile.dart';
 
 class SchoolPicker extends StatefulWidget {
-  const SchoolPicker({super.key});
+  final String? initialCity;
+  final String? initialSchool;
+  final String? initialClass;
+  final Function(String city, String school, String className) onSaved;
+  final VoidCallback? onCancel;
+
+  const SchoolPicker({
+    super.key,
+    this.initialCity,
+    this.initialSchool,
+    this.initialClass,
+    required this.onSaved,
+    this.onCancel,
+  });
 
   @override
   State<SchoolPicker> createState() => _SchoolPickerState();
@@ -20,24 +33,37 @@ class _SchoolPickerState extends State<SchoolPicker> {
 
   final ProfileApi profileApi = ProfileApi();
 
+  @override
+  void initState() {
+    super.initState();
+    _cityController.text = widget.initialCity ?? '';
+    _schoolController.text = widget.initialSchool ?? '';
+    _classController.text = widget.initialClass ?? '';
+    _selectedCity = widget.initialCity;
+    _selectedSchool = widget.initialSchool;
+    _selectedClass = widget.initialClass;
+  }
+
+  @override
+  void dispose() {
+    _cityController.dispose();
+    _schoolController.dispose();
+    _classController.dispose();
+    super.dispose();
+  }
+
   String? _validateCity(String? value) {
     if (value == null || value.isEmpty) {
       return 'Wybierz miejscowość twojej szkoły';
     }
-    if (!profileApi.getCityAutocompletions(value).contains(value)) {
-      return 'Miejscowość nieznana';
-    }
+    // Async validation cannot be done synchronously here.
+    // We rely on the user selecting from the list or we could validate on submit.
     return null;
   }
 
   String? _validateSchool(String? value) {
     if (value == null || value.isEmpty) {
       return 'Wybierz szkołę';
-    }
-    if (!profileApi
-        .getSchoolAutocompletions(_cityController.text, value)
-        .contains(value)) {
-      return 'Szkoła nieznana. Wybierz szkołę z listy';
     }
     return null;
   }
@@ -68,7 +94,7 @@ class _SchoolPickerState extends State<SchoolPicker> {
             ),
             autovalidateMode: AutovalidateMode.onUserInteraction,
             suggestionsCallback: (pattern) async {
-              return await ProfileApi().getCityAutocompletions(pattern);
+              return await profileApi.getCityAutocompletions(pattern);
             },
             itemBuilder: (context, suggestion) {
               return ListTile(title: Text(suggestion));
@@ -104,6 +130,7 @@ class _SchoolPickerState extends State<SchoolPicker> {
             ),
             autovalidateMode: AutovalidateMode.onUserInteraction,
             suggestionsCallback: (pattern) async {
+              if (_cityController.text.isEmpty) return [];
               return await profileApi.getSchoolAutocompletions(
                 _cityController.text,
                 pattern,
@@ -114,6 +141,7 @@ class _SchoolPickerState extends State<SchoolPicker> {
             },
             onSuggestionSelected: (suggestion) {
               _schoolController.text = suggestion;
+              _selectedSchool = suggestion;
             },
             validator: _validateSchool,
             errorBuilder: (context, error) {
@@ -140,15 +168,25 @@ class _SchoolPickerState extends State<SchoolPicker> {
             autovalidateMode: AutovalidateMode.onUserInteraction,
           ),
           SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              if (_formKey.currentState?.validate() ?? false) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Form is valid!')));
-              }
-            },
-            child: Text('Validate Form'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (widget.onCancel != null)
+                TextButton(onPressed: widget.onCancel, child: Text('Anuluj')),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState?.validate() ?? false) {
+                    widget.onSaved(
+                      _cityController.text,
+                      _schoolController.text,
+                      _classController.text,
+                    );
+                  }
+                },
+                child: Text('Zapisz'),
+              ),
+            ],
           ),
         ],
       ),
