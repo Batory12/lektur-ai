@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lekturai_front/widgets/change_password.dart';
+import 'package:lekturai_front/widgets/school_picker.dart';
 
 
 class ProfileScreen extends StatelessWidget {
@@ -11,7 +12,12 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Profile'),
       ),
-      body: const ChangePasswordWidget(),
+      body: Column(
+        children: const [
+          ChangePasswordWidget(),
+          SchoolPicker(),
+        ],
+      ),
     );
   }
 }
