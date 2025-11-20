@@ -1,0 +1,42 @@
+[
+  {
+    "city": "Warszawa",
+    "schools": [
+      "Liceum Ogólnokształcące im. Stefana Batorego",
+      "XXX Liceum Ogólnokształcące im. Jana Śniadeckiego",
+      "II Liceum Ogólnokształcące z Oddziałami Dwujęzycznymi im. Stefana Batorego"
+    ]
+  },
+  {
+    "city": "Wrocław",
+    "schools": [
+      "I Liceum Ogólnokształcące",
+      "II Liceum Ogólnokształcące im. Piastów Śląskich",
+      "III Liceum Ogólnokształcące im. Adama Mickiewicza"
+    ]
+  },
+  {
+    "city": "Kraków",
+    "schools": [
+      "I Liceum Ogólnokształcące im. Bartłomieja Nowodworskiego",
+      "II Liceum Ogólnokształcące im. Króla Jana III Sobieskiego",
+      "V Liceum Ogólnokształcące im. Augusta Witkowskiego"
+    ]
+  },
+  {
+    "city": "Gdańsk",
+    "schools": [
+      "I Liceum Ogólnokształcące im. Mikołaja Kopernika",
+      "II Liceum Ogólnokształcące im. dr. Władysława Pniewskiego",
+      "III Liceum Ogólnokształcące im. Bohaterów Westerplatte"
+    ]
+  },
+  {
+    "city": "Poznań",
+    "schools": [
+      "I Liceum Ogólnokształcące im. Karola Marcinkowskiego",
+      "II Liceum Ogólnokształcące im. Generałowej Zamoyskiej i Heleny Modrzejewskiej",
+      "VIII Liceum Ogólnokształcące im. Adama Mickiewicza"
+    ]
+  }
+]
