@@ -56,13 +56,14 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
         children: [
           TextFormField(
             controller: _currentPasswordController,
-            decoration: const InputDecoration(labelText: 'Current Password'),
+            decoration: const InputDecoration(labelText: 'Current Password', border: OutlineInputBorder()),
             obscureText: true,
             validator: _validateCurrentPassword,
           ),
+          SizedBox(height: 20),
           TextFormField(
             controller: _newPasswordController,
-            decoration: const InputDecoration(labelText: 'New Password'),
+            decoration: const InputDecoration(labelText: 'New Password', border: OutlineInputBorder()),
             obscureText: true,
             validator: _validateNewPassword,
             onChanged: (value) {
@@ -72,9 +73,10 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
               }
             },
           ),
+          SizedBox(height: 20),
           TextFormField(
             controller: _confirmPasswordController,
-            decoration: const InputDecoration(labelText: 'Confirm New Password'),
+            decoration: const InputDecoration(labelText: 'Confirm New Password', border: OutlineInputBorder()),
             obscureText: true,
             validator: _validateConfirmPassword,
           ),
