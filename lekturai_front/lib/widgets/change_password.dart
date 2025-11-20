@@ -25,27 +25,27 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
 
   String? _validateConfirmPassword(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please confirm your password';
+      return 'Potwierdź swoje hasło';
     }
     if (value != _newPasswordController.text) {
-      return 'Passwords do not match';
+      return 'Hasła nie są zgodne';
     }
     return null;
   }
 
   String? _validateNewPassword(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter a new password';
+      return 'Wprowadź nowe hasło';
     }
     if (value.length < 6) {
-      return 'Password must be at least 6 characters long';
+      return 'Hasło musi mieć co najmniej 6 znaków';
     }
     return null;
   }
 
   String? _validateCurrentPassword(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter your current password';
+      return 'Wprowadź obecne hasło';
     }
     return null;
   }
@@ -58,14 +58,14 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
         children: [
           TextFormField(
             controller: _currentPasswordController,
-            decoration: const InputDecoration(labelText: 'Current Password', border: OutlineInputBorder()),
+            decoration: const InputDecoration(labelText: 'Aktualne Hasło', border: OutlineInputBorder()),
             obscureText: true,
             validator: _validateCurrentPassword,
           ),
           SizedBox(height: 20),
           TextFormField(
             controller: _newPasswordController,
-            decoration: const InputDecoration(labelText: 'New Password', border: OutlineInputBorder()),
+            decoration: const InputDecoration(labelText: 'Nowe Hasło', border: OutlineInputBorder()),
             obscureText: true,
             validator: _validateNewPassword,
             onChanged: (value) {
@@ -78,7 +78,7 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
           SizedBox(height: 20),
           TextFormField(
             controller: _confirmPasswordController,
-            decoration: const InputDecoration(labelText: 'Confirm New Password', border: OutlineInputBorder()),
+            decoration: const InputDecoration(labelText: 'Potwierdź nowe hasło', border: OutlineInputBorder()),
             obscureText: true,
             validator: _validateConfirmPassword,
           ),
@@ -89,7 +89,7 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
               if (widget.onCancel != null)
                 TextButton(
                   onPressed: widget.onCancel,
-                  child: const Text('Cancel'),
+                  child: const Text('Anuluj'),
                 ),
               SizedBox(width: 10),
               ElevatedButton(
@@ -97,12 +97,12 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
                   if (_formKey.currentState?.validate() ?? false) {
                     // TODO: Send password change request to the server
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password changed successfully!')),
+                      const SnackBar(content: Text('Hasło zostało zmienione pomyślnie!')),
                     );
                     widget.onSuccess?.call();
                   }
                 },
-                child: const Text('Change Password'),
+                child: const Text('Zmień Hasło'),
               ),
             ],
           ),

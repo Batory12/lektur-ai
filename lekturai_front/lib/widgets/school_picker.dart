@@ -23,9 +23,7 @@ class SchoolPicker extends StatefulWidget {
 }
 
 class _SchoolPickerState extends State<SchoolPicker> {
-  String? _selectedCity;
-  String? _selectedSchool;
-  String? _selectedClass;
+
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _schoolController = TextEditingController();
   final TextEditingController _classController = TextEditingController();
@@ -39,9 +37,6 @@ class _SchoolPickerState extends State<SchoolPicker> {
     _cityController.text = widget.initialCity ?? '';
     _schoolController.text = widget.initialSchool ?? '';
     _classController.text = widget.initialClass ?? '';
-    _selectedCity = widget.initialCity;
-    _selectedSchool = widget.initialSchool;
-    _selectedClass = widget.initialClass;
   }
 
   @override
@@ -101,7 +96,6 @@ class _SchoolPickerState extends State<SchoolPicker> {
             },
             onSuggestionSelected: (suggestion) {
               _cityController.text = suggestion;
-              _selectedCity = suggestion;
               _schoolController.clear();
               _classController.clear();
             },
@@ -141,7 +135,6 @@ class _SchoolPickerState extends State<SchoolPicker> {
             },
             onSuggestionSelected: (suggestion) {
               _schoolController.text = suggestion;
-              _selectedSchool = suggestion;
             },
             validator: _validateSchool,
             errorBuilder: (context, error) {
