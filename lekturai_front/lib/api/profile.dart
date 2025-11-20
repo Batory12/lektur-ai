@@ -1,10 +1,19 @@
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 class ProfileApi {
   final String? baseUrl;
+  List<dynamic> _schoolsData = [];
 
   ProfileApi({this.baseUrl});
+
+  Future<void> loadSchools() async {
+    if (_schoolsData.isEmpty) {
+      final String response = await rootBundle.loadString('assets/schools.json');
+      _schoolsData = json.decode(response);
+    }
+  }
 
   Future<http.Response> changePassword(String userId, String oldPassword, String newPassword) {
     final url = Uri.parse('$baseUrl/users/$userId/change-password');
@@ -16,29 +25,25 @@ class ProfileApi {
       },
     );
   }
-  List<String> getCityAutocompletions(String query) {
-    final cities = ['Warszawa', 'Wrocław', 'Wisła'];
-    return cities.where((city) => city.toLowerCase().startsWith(query.toLowerCase())).toList();
-  //   final url = Uri.parse('$baseUrl/cities/autocomplete?query=$query');
-  //   final response = await http.get(url);
 
-  //   if (response.statusCode == 200) {
-  //     // Assuming the response body is a JSON array of city names
-  //     final List<dynamic> data = jsonDecode(response.body);
-  //     return data.cast<String>();
-  //   } else {
-  //     throw Exception('Failed to load city autocompletions');
-  //   }
+  Future<List<String>> getCityAutocompletions(String query) async {
+    await loadSchools();
+    return _schoolsData
+        .map((e) => e['city'] as String)
+        .where((city) => city.toLowerCase().startsWith(query.toLowerCase()))
+        .toList();
   }
 
-  List<String> getSchoolAutocompletions(String city, String query) {
-    final schools = {
-      'Warszawa': ['Liceum Ogólnokształcące im. Stefana Batorego', 'XXX LO'],
-      'Wrocław': ['I Liceum Ogólnokształcące', 'II Liceum Ogólnokształcące'],
-      'Wisła': ['Liceum Ogólnokształcące w Wiśle'],
-    };
-
-    final citySchools = schools[city] ?? [];
-    return citySchools.where((school) => school.toLowerCase().startsWith(query.toLowerCase())).toList();
+  Future<List<String>> getSchoolAutocompletions(String city, String query) async {
+    await loadSchools();
+    final cityData = _schoolsData.firstWhere(
+      (e) => e['city'] == city,
+      orElse: () => {'schools': []},
+    );
+    final List<dynamic> schools = cityData['schools'];
+    return schools
+        .map((e) => e as String)
+        .where((school) => school.toLowerCase().contains(query.toLowerCase()))
+        .toList();
   }
 }

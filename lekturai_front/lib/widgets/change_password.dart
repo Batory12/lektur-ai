@@ -1,10 +1,12 @@
 
 
-
 import 'package:flutter/material.dart';
 
 class ChangePasswordWidget extends StatefulWidget {
-  const ChangePasswordWidget({super.key});
+  final VoidCallback? onCancel;
+  final VoidCallback? onSuccess;
+
+  const ChangePasswordWidget({super.key, this.onCancel, this.onSuccess});
 
   @override
   State<StatefulWidget> createState() {
@@ -80,16 +82,29 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
             obscureText: true,
             validator: _validateConfirmPassword,
           ),
-          ElevatedButton(
-            onPressed: () {
-              if (_formKey.currentState?.validate() ?? false) {
-                // TODO: Send password change request to the server
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Passwords match! Ready to change password.')),
-                );
-              }
-            },
-            child: const Text('Change Password'),
+          SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (widget.onCancel != null)
+                TextButton(
+                  onPressed: widget.onCancel,
+                  child: const Text('Cancel'),
+                ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState?.validate() ?? false) {
+                    // TODO: Send password change request to the server
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Password changed successfully!')),
+                    );
+                    widget.onSuccess?.call();
+                  }
+                },
+                child: const Text('Change Password'),
+              ),
+            ],
           ),
         ],
       ),
