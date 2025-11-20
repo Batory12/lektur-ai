@@ -74,6 +74,13 @@ class CommonScaffold extends StatelessWidget {
                       Navigator.pushNamed(context, '/historia');
                     },
                   ),
+                  ListTile(
+                    leading: Icon(Icons.person),
+                    title: Text('Profil'),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/profile');
+                    },
+                  ),
                 ],
               ),
             )
