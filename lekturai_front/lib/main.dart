@@ -3,6 +3,7 @@ import 'package:lekturai_front/placeholder_screen.dart';
 import 'package:lekturai_front/questions_screen.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
+import 'profile_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
         '/zmatur': (context) => const PlaceholderScreen(),
         '/rozprawka': (context) => const PlaceholderScreen(),
         '/historia': (context) => const PlaceholderScreen(),
+        '/profile': (context) => const ProfileScreen(),
       },
       initialRoute: '/',
     );
