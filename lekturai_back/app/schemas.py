@@ -1,0 +1,90 @@
+from pydantic import BaseModel
+from typing import List, Optional
+from datetime import datetime
+
+# Auth
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+# History
+class RecentQuestion(BaseModel):
+    type: str  # reading, matura, open, closed
+    title: str
+    description: str
+    user_answer: str
+    feedback: str
+    grade: float
+
+class HistoryEntry(BaseModel):
+    # Placeholder for readings_history endpoint
+    date: datetime
+    summary: str
+    points: int
+
+# Exercises (Readings)
+class ReadingExerciseGen(BaseModel):
+    excercise_title: str
+    excercise_text: str
+
+class ReadingExerciseSubmit(BaseModel):
+    excercise_title: str
+    excercise_text: str
+    user_answer: str
+
+class GradeResponse(BaseModel):
+    grade: float
+    feedback: str
+
+# Exercises (Matura)
+class MaturaExercise(BaseModel):
+    excercise_id: int
+    excercise_title: str
+    excercise_text: str
+
+class MaturaSubmit(BaseModel):
+    user_answer: str
+
+class MaturaGradeResponse(GradeResponse):
+    excercise_id: int
+    user_answer: str
+    answer_key: str
+
+# Schools
+class City(BaseModel):
+    name: str
+
+class School(BaseModel):
+    school_id: int
+    school_name: str
+
+class SchoolAssign(BaseModel):
+    school_id: int
+
+class ClassAssign(BaseModel):
+    classname: str
+
+# Chat
+class ChatMessage(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
+    conversation_id: int
+    message: str
+
+# Search / Context
+class ContextRequest(BaseModel):
+    title: str
+    contexts: List[str] # List of text fragments
+
+class FoundContext(BaseModel):
+    found_context: str
+    context_n: Optional[int] = None
+    argument: Optional[str] = None
+
+class ReadingChapterInfo(BaseModel):
+    n_chapters: int

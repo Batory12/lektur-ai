@@ -6,5 +6,12 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.121.2",
+    "mypy>=1.18.2",
     "uvicorn>=0.38.0",
 ]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
