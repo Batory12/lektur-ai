@@ -1,13 +1,17 @@
 [project]
 name = "lekturai-back"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "Backend for LekturAI"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.121.2",
-    "mypy>=1.18.2",
-    "uvicorn>=0.38.0",
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+]
+
+[dependency-groups]
+dev = [
+    "mypy",
 ]
 
 [tool.mypy]
