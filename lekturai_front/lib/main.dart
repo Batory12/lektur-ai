@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lekturai_front/firebase_options.dart';
+import 'package:lekturai_front/history_screen.dart';
 import 'package:lekturai_front/placeholder_screen.dart';
 import 'package:lekturai_front/questions_screen.dart';
 import 'package:lekturai_front/register_screen.dart';
@@ -12,15 +13,13 @@ import 'profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load environment variables
-  await dotenv.load(fileName: ".env");
-  
+  await dotenv.load();
+
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const MyApp());
 }
 
@@ -93,7 +92,7 @@ class MyApp extends StatelessWidget {
         '/zlektur': (context) => const QuestionsScreen(),
         '/zmatur': (context) => const PlaceholderScreen(),
         '/rozprawka': (context) => const PlaceholderScreen(),
-        '/historia': (context) => const PlaceholderScreen(),
+        '/historia': (context) => const HistoryScreen(),
         '/profile': (context) => const ProfileScreen(),
       },
       initialRoute: '/',

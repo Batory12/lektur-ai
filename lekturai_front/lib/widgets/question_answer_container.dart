@@ -3,7 +3,23 @@ import 'package:lekturai_front/widgets/qa_card.dart';
 import 'package:lekturai_front/widgets/text_or_loading.dart';
 
 class QuestionAnswerContainer extends StatefulWidget {
-  const QuestionAnswerContainer({super.key});
+  final String? questionTitle;
+  final String? questionText;
+  final String? answerText;
+  final String? evaluationTitle;
+  final String? evaluationText;
+  final bool questionInitiallyLoading;
+  final bool evalInitiallyLoading;
+  const QuestionAnswerContainer({
+    super.key,
+    this.questionTitle,
+    this.questionText,
+    this.answerText,
+    this.evaluationTitle,
+    this.evaluationText,
+    this.questionInitiallyLoading = true,
+    this.evalInitiallyLoading = true,
+  });
 
   @override
   State<StatefulWidget> createState() {
@@ -17,6 +33,10 @@ class QAState extends State<QuestionAnswerContainer> {
   String? answerText;
   String? evaluationTitle;
   String? evaluationText;
+  bool questionTitleLoading = true;
+  bool evalTitleLoading = true;
+  bool questionTextLoading = true;
+  bool evalTextLoading = true;
 
   final TextEditingController answerInput = TextEditingController();
 
@@ -25,6 +45,20 @@ class QAState extends State<QuestionAnswerContainer> {
       answerText = newAnswer;
       evaluationTitle = "test";
     });
+  }
+
+  @override
+  void initState() {
+    questionText = widget.questionText;
+    questionTitle = widget.questionTitle;
+    answerText = widget.answerText;
+    evaluationTitle = widget.evaluationTitle;
+    evaluationText = widget.evaluationText;
+    questionTitleLoading = widget.questionInitiallyLoading;
+    questionTextLoading = widget.questionInitiallyLoading;
+    evalTitleLoading = widget.evalInitiallyLoading;
+    evalTextLoading = widget.evalInitiallyLoading;
+    super.initState();
   }
 
   @override
@@ -45,8 +79,14 @@ class QAState extends State<QuestionAnswerContainer> {
               QACard(
                 child: Column(
                   children: [
-                    TextOrLoading(text: "${questionTitle ?? ""} test"),
-                    TextOrLoading(text: questionText),
+                    TextOrLoading(
+                      text: questionTitle ?? "",
+                      finished: !questionTitleLoading,
+                    ),
+                    TextOrLoading(
+                      text: questionText,
+                      finished: !questionTextLoading,
+                    ),
                   ],
                 ),
               ),
@@ -84,8 +124,14 @@ class QAState extends State<QuestionAnswerContainer> {
                   color: Colors.deepOrangeAccent,
                   child: Column(
                     children: [
-                      TextOrLoading(text: evaluationTitle),
-                      TextOrLoading(text: evaluationText),
+                      TextOrLoading(
+                        text: evaluationTitle,
+                        finished: !evalTitleLoading,
+                      ),
+                      TextOrLoading(
+                        text: evaluationText,
+                        finished: !evalTextLoading,
+                      ),
                     ],
                   ),
                 ),

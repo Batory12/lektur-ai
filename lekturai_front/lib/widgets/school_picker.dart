@@ -23,7 +23,6 @@ class SchoolPicker extends StatefulWidget {
 }
 
 class _SchoolPickerState extends State<SchoolPicker> {
-
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _schoolController = TextEditingController();
   final TextEditingController _classController = TextEditingController();
