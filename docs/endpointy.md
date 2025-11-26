@@ -14,10 +14,12 @@ JWT powinien zawierać informacje jednoznacznie identyfikujące użytkownika, ż
 
 # Historia, statystyki
 
-/readings\_history?(dayfrom : datetime, dayto : datetime) \-\> List\[eval\_summary, eval\] \~może eval\_points? nwm  
-/exercise\_history \~ podobnie
+### GET /readings_question_history?(sortby : string, from : int, to : int) 
+możliwe wartości sortby : {"recent", "best_eval", "worst_eval"} (można dorobić więcej)
+response -> List[question_title, question, answer, eval_summary, eval, submit_time : datetime] ~może eval_points? nwm  
+### GET /exercise_history ~ podobnie
 
-### GET /recent_questions
+### GET /recent_questions ~ być może niepotrzebne
 
 response -> array of questions{
     type: String ("reading", "matura", "otwarte", "zamkniete"),
