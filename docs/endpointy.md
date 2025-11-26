@@ -106,7 +106,21 @@ Response -> {
 
 # Asystent rozprawki
 
-/find\_contexts {title : String, List\[context : String\]} \-\> List\[found\_context : String\], List\[context\_n : Int, argument : String\] \~nie wiem o co chodzi z argumentami
+### GET /contexts
+{
+    title: String // tytuł rozprawki,
+    contexts: [
+        context_type: String // historyczny, literacki, artystyczny itp -> zobacz docs/rozprawka.md
+        context_additional_description: String // user może dopisać jakieś swoje preferencje - na przykład dla kontekstu historycznego może dopisać, że chce coś z II wojny światowej
+    ]
+}
+Response -> {
+    contexts: [
+        context_type: String,
+        context_title: String,
+        context_description: String // tutaj mógłby być jakiś argument, uzasadnienie, dlaczego to pasuje i jak tego użyć. 
+    ]
+}
 
 # Wyszukiwanie
 
