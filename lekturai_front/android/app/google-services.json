@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "512966380116",
+    "firebase_url": "https://lektur-ai-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "lektur-ai",
+    "storage_bucket": "lektur-ai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:512966380116:android:f5f960595563edf2a47bc1",
+        "android_client_info": {
+          "package_name": "com.example.lekturai_front"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhMeQJO9P6SqSMDJ1IE5WLwd7GU3t3G3E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

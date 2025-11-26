@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:lekturai_front/firebase_options.dart';
 import 'package:lekturai_front/placeholder_screen.dart';
 import 'package:lekturai_front/questions_screen.dart';
+import 'package:lekturai_front/register_screen.dart';
+import 'package:lekturai_front/widgets/auth_wrapper.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   runApp(const MyApp());
 }
 
@@ -71,7 +86,9 @@ class MyApp extends StatelessWidget {
       ),
       // Define routes
       routes: {
-        '/': (context) => const LoginScreen(),
+        '/': (context) => const AuthWrapper(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
         '/zlektur': (context) => const QuestionsScreen(),
         '/zmatur': (context) => const PlaceholderScreen(),
