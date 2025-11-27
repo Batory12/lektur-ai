@@ -9,6 +9,7 @@ import 'package:lekturai_front/widgets/auth_wrapper.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
+import 'essay_assistant_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,7 +93,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/zlektur': (context) => const QuestionsScreen(),
         '/zmatur': (context) => const PlaceholderScreen(),
-        '/rozprawka': (context) => const PlaceholderScreen(),
+        '/rozprawka': (context) => const EssayAssistantScreen(),
         '/historia': (context) => const PlaceholderScreen(),
         '/profile': (context) => const ProfileScreen(),
       },
