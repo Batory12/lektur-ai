@@ -14,8 +14,13 @@ import 'essay_assistant_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
+  // Load environment variables (optional - don't crash if file doesn't exist)
+  try {
+    await dotenv.load(fileName: "assets/.env");
+  } catch (e) {
+    print('Warning: Could not load .env file: $e');
+    // Continue without .env file - will use defaults
+  }
   
   // Initialize Firebase
   await Firebase.initializeApp(
