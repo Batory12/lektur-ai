@@ -79,50 +79,47 @@ class _SchoolPickerState extends State<SchoolPicker> {
       key: _formKey,
       child: Column(
         children: [
-          TypeAheadFormField(
-            textFieldConfiguration: TextFieldConfiguration(
-              controller: _cityController,
-              decoration: InputDecoration(
-                labelText: 'Miejscowość',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            autovalidateMode: AutovalidateMode.onUserInteraction,
+          TypeAheadField<String>(
+            controller: _cityController,
+            builder: (context, controller, focusNode) {
+              return TextFormField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: const InputDecoration(
+                  labelText: 'Miejscowość',
+                  border: OutlineInputBorder(),
+                ),
+                validator: _validateCity,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              );
+            },
             suggestionsCallback: (pattern) async {
               return await profileApi.getCityAutocompletions(pattern);
             },
             itemBuilder: (context, suggestion) {
               return ListTile(title: Text(suggestion));
             },
-            onSuggestionSelected: (suggestion) {
+            onSelected: (suggestion) {
               _cityController.text = suggestion;
               _schoolController.clear();
               _classController.clear();
             },
-            validator: _validateCity,
-            errorBuilder: (context, error) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 5.0),
-                child: Text(
-                  error.toString(),
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
-                  ),
-                ),
-              );
-            },
           ),
           SizedBox(height: 20),
-          TypeAheadFormField(
-            textFieldConfiguration: TextFieldConfiguration(
-              controller: _schoolController,
-              decoration: InputDecoration(
-                labelText: 'Szkoła',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            autovalidateMode: AutovalidateMode.onUserInteraction,
+          TypeAheadField<String>(
+            controller: _schoolController,
+            builder: (context, controller, focusNode) {
+              return TextFormField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: const InputDecoration(
+                  labelText: 'Szkoła',
+                  border: OutlineInputBorder(),
+                ),
+                validator: _validateSchool,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              );
+            },
             suggestionsCallback: (pattern) async {
               if (_cityController.text.isEmpty) return [];
               return await profileApi.getSchoolAutocompletions(
@@ -133,21 +130,8 @@ class _SchoolPickerState extends State<SchoolPicker> {
             itemBuilder: (context, suggestion) {
               return ListTile(title: Text(suggestion));
             },
-            onSuggestionSelected: (suggestion) {
+            onSelected: (suggestion) {
               _schoolController.text = suggestion;
-            },
-            validator: _validateSchool,
-            errorBuilder: (context, error) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 5.0),
-                child: Text(
-                  error.toString(),
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
-                  ),
-                ),
-              );
             },
           ),
           SizedBox(height: 20),
