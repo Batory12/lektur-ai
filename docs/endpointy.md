@@ -91,21 +91,6 @@ Przypisuje ucznia do danej klasy jeśli ma wybraną szkołę.
 Np klasa 4a.
 
 
-# ChatBot
-## POST /chat/new
-Creates new conversation for user with chat.
-Response -> conversation_id
-
-## POST /chat/:[conversation_id: Int]
-{
-    message: String
-}
-Response -> {
-    conversation_id: Int,
-    message: String
-}
-
-
 # Asystent rozprawki
 
 /find\_contexts {title : String, List\[context : String\]} \-\> List\[found\_context : String\], List\[context\_n : Int, argument : String\] \~nie wiem o co chodzi z argumentami

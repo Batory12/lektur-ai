@@ -49,7 +49,6 @@ def get_exercise_history(
 @router.get("/recent_questions", response_model=List[RecentQuestion])
 def get_recent_questions() -> List[RecentQuestion]:
     """Return a list of recent questions seen by the user.
-
     `type` may be one of: "reading", "matura", "otwarte", "zamkniete".
     """
     # WIT_TODO: AI mocked data — replace with DB queries in future
