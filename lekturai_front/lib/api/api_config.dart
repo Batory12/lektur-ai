@@ -7,7 +7,7 @@ class ApiConfig {
     return dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000';
   }
   
-  static const String contextsEndpoint = '/contexts';
+  static const String contextsEndpoint = '/find_contexts';
   
   static String get contextsUrl => baseUrl + contextsEndpoint;
   
