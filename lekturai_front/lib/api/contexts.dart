@@ -104,7 +104,7 @@ class ContextsApi {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final List<dynamic> contextsJson = data['contexts'];
+        final List<dynamic> contextsJson = data;
         final contexts = contextsJson.map((json) => Context.fromJson(json)).toList();
         return ContextsResult(contexts: contexts, isMockData: false);
       } else {

@@ -7,9 +7,9 @@ router = APIRouter(tags=["Search & Assistant"])
 def find_contexts(data: ContextRequest) -> list[FoundContext]:
     return [
         FoundContext(
-            found_context="Fragment Lalki...",
-            context_n=1,
-            argument="Idealizm"
+            context_type=data.contexts[0].context_type,
+            context_title="Lalka to argument na wszystko",
+            context_description="Lalka Bolesława Prusa to powieść realistyczna..."
         )
     ]
 
