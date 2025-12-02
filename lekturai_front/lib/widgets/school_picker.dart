@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
-import 'package:lekturai_front/api/profile.dart';
 import 'package:lekturai_front/services/autocomplete_service.dart';
 
 class SchoolPicker extends StatefulWidget {
