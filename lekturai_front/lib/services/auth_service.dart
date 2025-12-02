@@ -117,6 +117,19 @@ class AuthService {
     }
   }
 
+  Future<bool> changePassword(String newPassword) async {
+    if (currentUser != null) {
+      try {
+        await currentUser!.updatePassword(newPassword);
+        print("Password updated!");
+        return true;
+      } catch (e) {
+        print("Error updating password: $e");
+      }
+    }
+    return false;
+  }
+
   // Reset password
   Future<AuthResult> resetPassword({required String email}) async {
     try {

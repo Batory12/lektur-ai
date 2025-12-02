@@ -14,10 +14,12 @@ JWT powinien zawierać informacje jednoznacznie identyfikujące użytkownika, ż
 
 # Historia, statystyki
 
-/readings\_history?(dayfrom : datetime, dayto : datetime) \-\> List\[eval\_summary, eval\] \~może eval\_points? nwm  
-/exercise\_history \~ podobnie
+### GET /readings_question_history?(sortby : string, from : int, to : int) 
+możliwe wartości sortby : {"recent", "best_eval", "worst_eval"} (można dorobić więcej)
+response -> List[question_title, question, answer, eval_summary, eval, submit_time : datetime] ~może eval_points? nwm  
+### GET /exercise_history ~ podobnie
 
-### GET /recent_questions
+### GET /recent_questions ~ być może niepotrzebne
 
 response -> array of questions{
     type: String ("reading", "matura", "otwarte", "zamkniete"),
@@ -89,24 +91,23 @@ Przypisuje ucznia do danej klasy jeśli ma wybraną szkołę.
 Np klasa 4a.
 
 
-# ChatBot
-## POST /chat/new
-Creates new conversation for user with chat.
-Response -> conversation_id
-
-## POST /chat/:[conversation_id: Int]
-{
-    message: String
-}
-Response -> {
-    conversation_id: Int,
-    message: String
-}
-
-
 # Asystent rozprawki
 
-/find\_contexts {title : String, List\[context : String\]} \-\> List\[found\_context : String\], List\[context\_n : Int, argument : String\] \~nie wiem o co chodzi z argumentami
+### GET /contexts
+{
+    title: String // tytuł rozprawki,
+    contexts: [
+        context_type: String // historyczny, literacki, artystyczny itp -> zobacz docs/rozprawka.md
+        context_additional_description: String // user może dopisać jakieś swoje preferencje - na przykład dla kontekstu historycznego może dopisać, że chce coś z II wojny światowej
+    ]
+}
+Response -> {
+    contexts: [
+        context_type: String,
+        context_title: String,
+        context_description: String // tutaj mógłby być jakiś argument, uzasadnienie, dlaczego to pasuje i jak tego użyć. 
+    ]
+}
 
 # Wyszukiwanie
 

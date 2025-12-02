@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
-import 'package:lekturai_front/api/profile.dart';
+import 'package:lekturai_front/services/autocomplete_service.dart';
 
 class SchoolPicker extends StatefulWidget {
   final String? initialCity;
@@ -28,7 +28,7 @@ class _SchoolPickerState extends State<SchoolPicker> {
   final TextEditingController _classController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  final ProfileApi profileApi = ProfileApi();
+  final AutocompleteService autocompleteService = AutocompleteService();
 
   @override
   void initState() {
@@ -66,7 +66,7 @@ class _SchoolPickerState extends State<SchoolPicker> {
     if (value == null || value.isEmpty) {
       return 'Wybierz klasę';
     }
-    if (!RegExp(r'^[1-8][A-Za-z]$').hasMatch(value)) {
+    if (!RegExp(r'^[1-8][A-Za-z]?$').hasMatch(value)) {
       return 'Niepoprawny format klasy (np. 3A)';
     }
     return null;
@@ -78,53 +78,49 @@ class _SchoolPickerState extends State<SchoolPicker> {
       key: _formKey,
       child: Column(
         children: [
-          TypeAheadFormField(
-            textFieldConfiguration: TextFieldConfiguration(
-              controller: _cityController,
-              decoration: InputDecoration(
-                labelText: 'Miejscowość',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            autovalidateMode: AutovalidateMode.onUserInteraction,
+          TypeAheadField<String>(
+            controller: _cityController,
+            builder: (context, controller, focusNode) {
+              return TextFormField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: const InputDecoration(
+                  labelText: 'Miejscowość',
+                  border: OutlineInputBorder(),
+                ),
+                validator: _validateCity,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              );
+            },
             suggestionsCallback: (pattern) async {
-              return await profileApi.getCityAutocompletions(pattern);
+              return await autocompleteService.getCities(pattern);
             },
             itemBuilder: (context, suggestion) {
               return ListTile(title: Text(suggestion));
             },
-            onSuggestionSelected: (suggestion) {
+            onSelected: (suggestion) {
               _cityController.text = suggestion;
               _schoolController.clear();
               _classController.clear();
             },
-            validator: _validateCity,
-            errorBuilder: (context, error) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 5.0),
-                child: Text(
-                  error.toString(),
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
-                  ),
-                ),
-              );
-            },
           ),
           SizedBox(height: 20),
-          TypeAheadFormField(
-            textFieldConfiguration: TextFieldConfiguration(
-              controller: _schoolController,
-              decoration: InputDecoration(
-                labelText: 'Szkoła',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            autovalidateMode: AutovalidateMode.onUserInteraction,
+          TypeAheadField<String>(
+            controller: _schoolController,
+            builder: (context, controller, focusNode) {
+              return TextFormField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: const InputDecoration(
+                  labelText: 'Szkoła',
+                  border: OutlineInputBorder(),
+                ),
+                validator: _validateSchool,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+              );
+            },
             suggestionsCallback: (pattern) async {
-              if (_cityController.text.isEmpty) return [];
-              return await profileApi.getSchoolAutocompletions(
+              return await autocompleteService.getSchoolNames(
                 _cityController.text,
                 pattern,
               );
@@ -132,21 +128,8 @@ class _SchoolPickerState extends State<SchoolPicker> {
             itemBuilder: (context, suggestion) {
               return ListTile(title: Text(suggestion));
             },
-            onSuggestionSelected: (suggestion) {
+            onSelected: (suggestion) {
               _schoolController.text = suggestion;
-            },
-            validator: _validateSchool,
-            errorBuilder: (context, error) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 5.0),
-                child: Text(
-                  error.toString(),
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontSize: 12,
-                  ),
-                ),
-              );
             },
           ),
           SizedBox(height: 20),
