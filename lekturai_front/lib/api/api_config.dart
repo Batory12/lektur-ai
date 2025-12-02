@@ -6,11 +6,16 @@ class ApiConfig {
   static String get baseUrl {
     return dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000';
   }
-  
+
   static const String contextsEndpoint = '/find_contexts';
-  
+
+  static const String recentQuestionsEndpoint = '/recent_questions';
+  static const String readingExcerciseEndpoint = '/reading_ex';
+  static const String maturaExcerciseEndpoint = '/matura_ex';
+
   static String get contextsUrl => baseUrl + contextsEndpoint;
-  
+  static String urlFor(String endpoint) => baseUrl + endpoint;
+
   // Debug logging for API requests
   static void logRequest({
     required String method,
@@ -21,14 +26,14 @@ class ApiConfig {
     print('=== API REQUEST ===');
     print('Method: $method');
     print('URL: $url');
-    
+
     if (headers != null && headers.isNotEmpty) {
       print('Headers:');
       headers.forEach((key, value) {
         print('  $key: $value');
       });
     }
-    
+
     if (body != null && body.isNotEmpty) {
       print('Body:');
       try {
@@ -41,23 +46,23 @@ class ApiConfig {
         print(body);
       }
     }
-    
+
     print('==================');
   }
-  
+
   // Debug logging for API responses
   static void logResponse(http.Response response) {
     print('=== API RESPONSE ===');
     print('Status Code: ${response.statusCode}');
     print('Reason Phrase: ${response.reasonPhrase}');
-    
+
     if (response.headers.isNotEmpty) {
       print('Headers:');
       response.headers.forEach((key, value) {
         print('  $key: $value');
       });
     }
-    
+
     if (response.body.isNotEmpty) {
       print('Body:');
       try {
@@ -70,7 +75,7 @@ class ApiConfig {
         print(response.body);
       }
     }
-    
+
     print('===================');
   }
 }

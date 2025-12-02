@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lekturai_front/api/exercise.dart';
 import 'package:lekturai_front/widgets/qa_card.dart';
 import 'package:lekturai_front/widgets/text_or_loading.dart';
 
@@ -37,8 +38,19 @@ class QAState extends State<QuestionAnswerContainer> {
   bool evalTitleLoading = true;
   bool questionTextLoading = true;
   bool evalTextLoading = true;
+  ExerciseApi api = ExerciseApi();
 
   final TextEditingController answerInput = TextEditingController();
+
+  Future<void> loadMaturaQuestion() async {
+    final question = await api.getMaturaExercise();
+    setState(() {
+      questionText = question.text;
+      questionTitle = question.title;
+      questionTextLoading = false;
+      questionTitleLoading = false;
+    });
+  }
 
   void setAnswer(String newAnswer) {
     setState(() {
@@ -59,6 +71,7 @@ class QAState extends State<QuestionAnswerContainer> {
     evalTitleLoading = widget.evalInitiallyLoading;
     evalTextLoading = widget.evalInitiallyLoading;
     super.initState();
+    loadMaturaQuestion();
   }
 
   @override
