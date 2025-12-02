@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lekturai_front/services/auth_service.dart';
 import 'package:lekturai_front/widgets/common_scaffold.dart';
+import 'package:lekturai_front/tools/password_validator.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -30,44 +31,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Wprowadź adres email';
-    }
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-      return 'Wprowadź prawidłowy adres email';
-    }
-    return null;
-  }
-
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Wprowadź hasło';
-    }
-    if (value.length < 6) {
-      return 'Hasło musi mieć co najmniej 6 znaków';
-    }
-    return null;
-  }
-
   String? _validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Potwierdź hasło';
-    }
-    if (value != _passwordController.text) {
-      return 'Hasła nie są zgodne';
-    }
-    return null;
-  }
-
-  String? _validateDisplayName(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Wprowadź swoją nazwę';
-    }
-    if (value.length < 2) {
-      return 'Nazwa musi mieć co najmniej 2 znaki';
-    }
-    return null;
+    return FormValidators.validatePasswordConfirmation(value, _passwordController.text);
   }
 
   Future<void> _register() async {
@@ -160,7 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.person),
                         ),
-                        validator: _validateDisplayName,
+                        validator: FormValidators.validateDisplayName,
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 16),
@@ -172,7 +137,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           prefixIcon: Icon(Icons.email),
                         ),
                         keyboardType: TextInputType.emailAddress,
-                        validator: _validateEmail,
+                        validator: FormValidators.validateEmail,
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 16),
@@ -192,7 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         obscureText: _obscurePassword,
-                        validator: _validatePassword,
+                        validator: FormValidators.validatePassword,
                         textInputAction: TextInputAction.next,
                         onChanged: (value) {
                           // Trigger validation of confirm password when password changes

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:lekturai_front/api/profile.dart';
+import 'package:lekturai_front/services/autocomplete_service.dart';
 
 class SchoolPicker extends StatefulWidget {
   final String? initialCity;
@@ -29,7 +30,7 @@ class _SchoolPickerState extends State<SchoolPicker> {
   final TextEditingController _classController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  final ProfileApi profileApi = ProfileApi();
+  final AutocompleteService autocompleteService = AutocompleteService();
 
   @override
   void initState() {
@@ -67,7 +68,7 @@ class _SchoolPickerState extends State<SchoolPicker> {
     if (value == null || value.isEmpty) {
       return 'Wybierz klasę';
     }
-    if (!RegExp(r'^[1-8][A-Za-z]$').hasMatch(value)) {
+    if (!RegExp(r'^[1-8][A-Za-z]?$').hasMatch(value)) {
       return 'Niepoprawny format klasy (np. 3A)';
     }
     return null;
@@ -94,7 +95,7 @@ class _SchoolPickerState extends State<SchoolPicker> {
               );
             },
             suggestionsCallback: (pattern) async {
-              return await profileApi.getCityAutocompletions(pattern);
+              return await autocompleteService.getCities(pattern);
             },
             itemBuilder: (context, suggestion) {
               return ListTile(title: Text(suggestion));
@@ -121,8 +122,7 @@ class _SchoolPickerState extends State<SchoolPicker> {
               );
             },
             suggestionsCallback: (pattern) async {
-              if (_cityController.text.isEmpty) return [];
-              return await profileApi.getSchoolAutocompletions(
+              return await autocompleteService.getSchoolNames(
                 _cityController.text,
                 pattern,
               );
