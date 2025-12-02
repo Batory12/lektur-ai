@@ -1,5 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'api/contexts.dart';
+import 'theme/colors.dart';
+import 'theme/spacing.dart';
+import 'theme/text_styles.dart';
+import 'widgets/context_selector.dart';
+import 'widgets/selected_contexts_list.dart';
+import 'widgets/essay_contexts_result.dart';
 
 class EssayAssistantScreen extends StatefulWidget {
   const EssayAssistantScreen({super.key});
@@ -14,6 +21,8 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
   final Map<String, TextEditingController> _contextDescriptions = {};
   List<Context>? _generatedContexts;
   bool _isLoading = false;
+  bool _isUsingMockData = false;
+  String? _apiErrorMessage;
   late ContextsApi _contextsApi;
 
   @override
@@ -64,7 +73,9 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
     if (_titleController.text.isEmpty || _selectedContexts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Proszę wprowadzić tytuł rozprawki i wybrać przynajmniej jeden kontekst'),
+          content: Text(
+            'Proszę wprowadzić tytuł rozprawki i wybrać przynajmniej jeden kontekst',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -81,14 +92,29 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
         contexts: _selectedContexts,
       );
 
-      final contexts = await _contextsApi.getContexts(request);
+      final result = await _contextsApi.getContexts(request);
       setState(() {
-        _generatedContexts = contexts;
+        _generatedContexts = result.contexts;
+        _isUsingMockData = result.isMockData;
+        _apiErrorMessage = result.errorMessage;
       });
+
+      // Show info message if using mock data
+      if (result.isMockData && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Błąd połączenia z serwerem. Pokazano przykładowe konteksty.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Błąd podczas generowania kontekstów: $e'),
+          content: Text('Nieoczekiwany błąd: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -99,44 +125,120 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
     }
   }
 
-  Widget _buildContextSelector() {
+  Future<void> _generateMockContexts() async {
+    if (_titleController.text.isEmpty || _selectedContexts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Proszę wprowadzić tytuł rozprawki i wybrać przynajmniej jeden kontekst',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 1));
+
+    final request = EssayContextsRequest(
+      title: _titleController.text,
+      contexts: _selectedContexts,
+    );
+
+    setState(() {
+      _generatedContexts = ContextsApi.generateMockContexts(request);
+      _isUsingMockData = true;
+      _apiErrorMessage = 'Mock data generated for testing';
+      _isLoading = false;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Wygenerowano przykładowe konteksty do testowania'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _testApiError() async {
+    if (_titleController.text.isEmpty || _selectedContexts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Proszę wprowadzić tytuł rozprawki i wybrać przynajmniej jeden kontekst',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Simulate API call with error
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
+      throw Exception('Simulated network error for testing');
+    } catch (e) {
+      final request = EssayContextsRequest(
+        title: _titleController.text,
+        contexts: _selectedContexts,
+      );
+
+      setState(() {
+        _generatedContexts = ContextsApi.generateMockContexts(request);
+        _isUsingMockData = true;
+        _apiErrorMessage = 'Simulated API error: $e';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Błąd połączenia z serwerem. Pokazano przykładowe konteksty.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildTitleCard() {
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.cardPaddingAll,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Wybierz konteksty',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            Text('Tytuł rozprawki', style: AppTextStyles.cardTitle),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                hintText: 'Wprowadź tytuł rozprawki...',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(AppSpacing.md),
               ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: ContextsApi.availableContextTypes.map((contextType) {
-                final isSelected = _selectedContexts.any((c) => c.contextType == contextType);
-                return FilterChip(
-                  label: Text(contextType),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      _addContext(contextType);
-                    } else {
-                      final index = _selectedContexts.indexWhere((c) => c.contextType == contextType);
-                      if (index != -1) {
-                        _removeContext(index);
-                      }
-                    }
-                  },
-                  tooltip: ContextsApi.getContextTypeDescription(contextType),
-                );
-              }).toList(),
+              maxLines: 2,
+              style: AppTextStyles.bodyMedium,
             ),
           ],
         ),
@@ -144,90 +246,20 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
     );
   }
 
-  Widget _buildSelectedContexts() {
-    if (_selectedContexts.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  Widget _buildContextSelector() {
+    return ContextSelector(
+      selectedContexts: _selectedContexts,
+      onContextAdded: _addContext,
+      onContextRemoved: _removeContext,
+    );
+  }
 
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Wybrane konteksty',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _selectedContexts.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final contextRequest = _selectedContexts[index];
-                final controller = _contextDescriptions[contextRequest.contextType]!;
-                
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              ContextsApi.getContextTypeDisplayName(contextRequest.contextType),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.red),
-                            onPressed: () => _removeContext(index),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        ContextsApi.getContextTypeDescription(contextRequest.contextType),
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: controller,
-                        decoration: const InputDecoration(
-                          hintText: 'Dodaj dodatkowy opis lub preferencje (opcjonalnie)',
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                        ),
-                        maxLines: 2,
-                        onChanged: (value) => _updateContextDescription(index, value),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+  Widget _buildSelectedContexts() {
+    return SelectedContextsList(
+      selectedContexts: _selectedContexts,
+      contextDescriptions: _contextDescriptions,
+      onContextRemoved: _removeContext,
+      onDescriptionChanged: _updateContextDescription,
     );
   }
 
@@ -236,86 +268,130 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
       return const SizedBox.shrink();
     }
 
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return EssayContextsResult(
+      essayTitle: _titleController.text,
+      contexts: _generatedContexts!,
+      onRegenerate: _generateContexts,
+      isMockData: _isUsingMockData,
+    );
+  }
+
+  Widget _buildGenerateButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: AppSpacing.buttonHeight,
+      child: ElevatedButton.icon(
+        onPressed: _isLoading ? null : _generateContexts,
+        icon: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.white,
+                ),
+              )
+            : const Icon(Icons.auto_awesome),
+        label: Text(_isLoading ? 'Generowanie...' : 'Wygeneruj konteksty'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebugButtons() {
+    // Show debug buttons only in debug mode
+    if (!kDebugMode) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        Row(
           children: [
-            const Text(
-              'Wygenerowane konteksty',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isLoading ? null : _generateMockContexts,
+                icon: const Icon(Icons.bug_report, size: 16),
+                label: const Text(
+                  'Test: Mock Data',
+                  style: TextStyle(fontSize: 12),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
+                  side: BorderSide(color: Colors.blue.shade300),
+                  foregroundColor: Colors.blue.shade700,
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _generatedContexts!.length,
-              separatorBuilder: (context, index) => const Divider(height: 24),
-              itemBuilder: (context, index) {
-                final generatedContext = _generatedContexts![index];
-                
-                return Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    border: Border.all(color: Colors.green.shade200),
-                    borderRadius: BorderRadius.circular(8),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isLoading ? null : _testApiError,
+                icon: const Icon(Icons.error_outline, size: 16),
+                label: const Text(
+                  'Test: API Error',
+                  style: TextStyle(fontSize: 12),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.lightbulb,
-                            color: Colors.green.shade600,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              ContextsApi.getContextTypeDisplayName(generatedContext.contextType),
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: Colors.green.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        generatedContext.contextTitle,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        generatedContext.contextDescription,
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 14,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                  side: BorderSide(color: Colors.orange.shade300),
+                  foregroundColor: Colors.orange.shade700,
+                ),
+              ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _generatedContexts = null;
+                    _isUsingMockData = false;
+                    _apiErrorMessage = null;
+                  });
+                },
+                icon: const Icon(Icons.clear, size: 16),
+                label: const Text(
+                  'Clear Results',
+                  style: TextStyle(fontSize: 12),
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
+                  side: BorderSide(color: Colors.grey.shade300),
+                  foregroundColor: Colors.grey.shade700,
+                ),
+              ),
+            ),
+            if (_apiErrorMessage != null) ...[
+              const SizedBox(width: AppSpacing.xs),
+              Tooltip(
+                message: _apiErrorMessage!,
+                child: Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
     );
   }
 
@@ -324,67 +400,27 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Asystent Rozprawki'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          padding: AppSpacing.safeAreaPadding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Card(
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Tytuł rozprawki',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _titleController,
-                        decoration: const InputDecoration(
-                          hintText: 'Wprowadź tytuł rozprawki...',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 2,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              _buildTitleCard(),
               _buildContextSelector(),
               _buildSelectedContexts(),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _generateContexts,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.auto_awesome),
-                  label: Text(_isLoading ? 'Generowanie...' : 'Wygeneruj konteksty'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
+              const SizedBox(height: AppSpacing.sectionSpacing),
+              _buildGenerateButton(),
+              const SizedBox(height: AppSpacing.sm),
+              _buildDebugButtons(),
               _buildGeneratedContexts(),
-              // Add extra bottom padding to ensure button is always visible
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+              // Add extra bottom padding to ensure content is always visible
+              SizedBox(
+                height: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+              ),
             ],
           ),
         ),
