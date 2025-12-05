@@ -80,12 +80,8 @@ class MaturaSubmit {
 
   MaturaSubmit({required this.id, required this.answer});
 
-  factory MaturaSubmit.fromJson(Map<String, dynamic> json) {
-    return MaturaSubmit(id: json['excercise_id'], answer: json['user_answer']);
-  }
-
   Map<String, dynamic> toJson() {
-    return {'excercise_id': id, 'user_answer': answer};
+    return {/*'excercise_id': id,*/ 'user_answer': answer};
   }
 }
 
@@ -104,6 +100,30 @@ class ReadingGradeResponse {
 
   Map<String, dynamic> toJson() {
     return {'grade': grade, 'feedback': feedback};
+  }
+}
+
+class MaturaGradeResponse {
+  final int exerciseId;
+  final double grade;
+  final String feedback;
+
+  MaturaGradeResponse({
+    required this.exerciseId,
+    required this.grade,
+    required this.feedback,
+  });
+
+  factory MaturaGradeResponse.fromJson(Map<String, dynamic> json) {
+    return MaturaGradeResponse(
+      exerciseId: json['excercise_id'],
+      grade: json['grade'],
+      feedback: json['feedback'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'grade': grade, 'feedback': feedback, 'excercise_id': exerciseId};
   }
 }
 
@@ -126,6 +146,35 @@ class ExerciseApi {
         return exercise;
       } else {
         throw Exception('Failed to get exercise: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow; //TODO for now
+    }
+  }
+
+  Future<MaturaGradeResponse> submitMaturaExercise(MaturaSubmit answer) async {
+    final url = Uri.parse(
+      ApiConfig.urlFor("${ApiConfig.maturaExcerciseEndpoint}/${answer.id}"),
+    );
+    final headers = {'Content-Type': 'application/json'};
+    final body = jsonEncode(answer.toJson());
+
+    ApiConfig.logRequest(
+      method: 'POST',
+      url: url.toString(),
+      headers: headers,
+      body: body,
+    );
+
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+
+      ApiConfig.logResponse(response);
+      if (response.statusCode == 200) {
+        final jsonBody = jsonDecode(response.body);
+        return MaturaGradeResponse.fromJson(jsonBody);
+      } else {
+        throw Exception('Failed to get contexts: ${response.statusCode}');
       }
     } catch (e) {
       rethrow; //TODO for now

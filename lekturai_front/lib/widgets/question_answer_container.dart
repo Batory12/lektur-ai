@@ -39,6 +39,7 @@ class QAState extends State<QuestionAnswerContainer> {
   bool questionTextLoading = true;
   bool evalTextLoading = true;
   ExerciseApi api = ExerciseApi();
+  int? questionId;
 
   final TextEditingController answerInput = TextEditingController();
 
@@ -50,12 +51,23 @@ class QAState extends State<QuestionAnswerContainer> {
       questionTextLoading = false;
       questionTitleLoading = false;
     });
+    questionId = question.id;
   }
 
-  void setAnswer(String newAnswer) {
+  Future<void> setAnswer(String newAnswer) async {
+    if (questionId == null) {
+      throw Exception("no question loaded!");
+    }
     setState(() {
       answerText = newAnswer;
-      evaluationTitle = "test";
+      evaluationText = "";
+    });
+    final submit = MaturaSubmit(answer: newAnswer, id: questionId!);
+    final grade = await api.submitMaturaExercise(submit);
+    setState(() {
+      evaluationText = grade.feedback;
+      evalTextLoading = false;
+      evalTitleLoading = false;
     });
   }
 
