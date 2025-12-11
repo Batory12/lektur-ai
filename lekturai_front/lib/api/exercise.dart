@@ -3,12 +3,17 @@ import 'dart:convert';
 import 'package:lekturai_front/api/api_config.dart';
 import 'package:http/http.dart' as http;
 
-class MaturaExercise {
-  final int id;
+abstract class Exercise {
   final String title;
   final String text;
 
-  MaturaExercise({required this.id, required this.title, required this.text});
+  Exercise({required this.title, required this.text});
+}
+
+class MaturaExercise extends Exercise {
+  final int id;
+
+  MaturaExercise({required this.id, required super.text, required super.title});
 
   factory MaturaExercise.fromJson(Map<String, dynamic> json) {
     return MaturaExercise(
@@ -27,11 +32,8 @@ class MaturaExercise {
   }
 }
 
-class ReadingExercise {
-  final String title;
-  final String text;
-
-  ReadingExercise({required this.title, required this.text});
+class ReadingExercise extends Exercise {
+  ReadingExercise({required super.title, required super.text});
 
   factory ReadingExercise.fromJson(Map<String, dynamic> json) {
     return ReadingExercise(
@@ -173,6 +175,64 @@ class ExerciseApi {
       if (response.statusCode == 200) {
         final jsonBody = jsonDecode(response.body);
         return MaturaGradeResponse.fromJson(jsonBody);
+      } else {
+        throw Exception('Failed to get contexts: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow; //TODO for now
+    }
+  }
+
+  Future<ReadingExercise> getReadingExercise(
+    String name,
+    int? toChapter,
+  ) async {
+    final url = Uri.parse(
+      "${ApiConfig.urlFor(ApiConfig.readingExcerciseEndpoint)}/$name${toChapter != null ? "?to_chapter=$toChapter" : ""}",
+    );
+    final headers = {'Content-Type': 'application/json'};
+
+    ApiConfig.logRequest(method: 'GET', url: url.toString(), headers: headers);
+
+    try {
+      final response = await http.get(url, headers: headers);
+
+      ApiConfig.logResponse(response);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final Map<String, dynamic> bodyJson = data;
+        final exercise = ReadingExercise.fromJson(bodyJson);
+        return exercise;
+      } else {
+        throw Exception('Failed to get exercise: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow; //TODO for now
+    }
+  }
+
+  Future<ReadingGradeResponse> submitReadingExercise(
+    ReadingExerciseSubmit answer,
+  ) async {
+    final url = Uri.parse(ApiConfig.urlFor(ApiConfig.readingExcerciseEndpoint));
+    final headers = {'Content-Type': 'application/json'};
+    final body = jsonEncode(answer.toJson());
+
+    ApiConfig.logRequest(
+      method: 'POST',
+      url: url.toString(),
+      headers: headers,
+      body: body,
+    );
+
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+
+      ApiConfig.logResponse(response);
+      if (response.statusCode == 200) {
+        final jsonBody = jsonDecode(response.body);
+        return ReadingGradeResponse.fromJson(jsonBody);
       } else {
         throw Exception('Failed to get contexts: ${response.statusCode}');
       }

@@ -4,7 +4,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lekturai_front/firebase_options.dart';
 import 'package:lekturai_front/history_screen.dart';
 import 'package:lekturai_front/placeholder_screen.dart';
-import 'package:lekturai_front/questions_screen.dart';
+import 'package:lekturai_front/matura_questions_screen.dart';
+import 'package:lekturai_front/reading_question_screen.dart';
 import 'package:lekturai_front/register_screen.dart';
 import 'package:lekturai_front/widgets/auth_wrapper.dart';
 import 'home_screen.dart';
@@ -95,10 +96,11 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
-        '/zlektur': (context) => const PlaceholderScreen(),
+        '/zlektur': (context) =>
+            const ReadingQuestionsScreen(readingName: "Lalka"),
         '/zmatur': (context) => const QuestionsScreen(),
         '/rozprawka': (context) => const EssayAssistantScreen(),
-        '/historia': (context) => const HistoryScreen(),
+        '/historia': (context) => const Placeholder(),
         '/profile': (context) => const ProfileScreen(),
       },
       initialRoute: '/',

@@ -35,6 +35,7 @@ class HistoryScreenState extends State<HistoryScreen> {
             "This absolutely is gibberish. It's loading mocked data until I implement actually loading from backend",
         questionInitiallyLoading: false,
         evalInitiallyLoading: false,
+        isMatura: false,
       ),
       QuestionAnswerContainer(
         questionTitle: "Gibberish question2",
@@ -45,6 +46,7 @@ class HistoryScreenState extends State<HistoryScreen> {
             "This absolutely is gibberish. It's loading mocked data until I implement actually loading from backend",
         questionInitiallyLoading: false,
         evalInitiallyLoading: false,
+        isMatura: false,
       ),
       QuestionAnswerContainer(
         questionTitle: "Gibberish question3",
@@ -55,6 +57,7 @@ class HistoryScreenState extends State<HistoryScreen> {
             "This absolutely is gibberish. It's loading mocked data until I implement actually loading from backend",
         questionInitiallyLoading: false,
         evalInitiallyLoading: false,
+        isMatura: false,
       ),
     ];
     setState(() {
