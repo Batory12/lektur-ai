@@ -356,6 +356,105 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    // Delete Account Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          // Show confirmation dialog
+                          bool? confirmDelete = await showDialog<bool>(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Usuń konto'),
+                                content: const Text(
+                                  'Czy na pewno chcesz usunąć swoje konto? '
+                                  'Ta operacja jest nieodwracalna i spowoduje '
+                                  'trwałe usunięcie wszystkich Twoich danych.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
+                                    child: const Text('Anuluj'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red[900],
+                                    ),
+                                    child: const Text('Usuń konto'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          if (confirmDelete == true) {
+                            // Show loading indicator
+                            if (mounted) {
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (BuildContext context) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                },
+                              );
+                            }
+
+                            // Delete account
+                            AuthResult result =
+                                await _authService.deleteAccount();
+
+                            // Close loading indicator
+                            if (mounted) {
+                              Navigator.of(context).pop();
+                            }
+
+                            if (mounted) {
+                              if (result.success) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      result.message ??
+                                          'Konto zostało pomyślnie usunięte',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                                // Navigate to login screen
+                                Navigator.pushNamedAndRemoveUntil(
+                                  context,
+                                  '/',
+                                  (route) => false,
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      result.error ?? 'Wystąpił błąd',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                    duration: const Duration(seconds: 5),
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.delete_forever),
+                        label: const Text('Usuń konto'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red[900],
+                          side: BorderSide(color: Colors.red[900]!),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     // Add extra bottom padding to ensure content is always visible
                     SizedBox(

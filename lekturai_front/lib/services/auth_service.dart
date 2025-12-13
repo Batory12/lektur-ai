@@ -66,6 +66,7 @@ class AuthService {
         'uid': user.uid,
         'email': user.email,
         'displayName': displayName,
+        'balance': 0,
         'city': null,
         'school': null,
         'className': null,
@@ -114,6 +115,45 @@ class AuthService {
       await _auth.signOut();
     } catch (e) {
       print('Błąd podczas wylogowywania: $e');
+    }
+  }
+
+  // Delete account
+  Future<AuthResult> deleteAccount() async {
+    if (currentUser == null) {
+      return AuthResult(
+        success: false,
+        error: 'Brak zalogowanego użytkownika',
+      );
+    }
+
+    try {
+      String uid = currentUser!.uid;
+
+      // Delete user document from Firestore
+      await _firestore.collection('users').doc(uid).delete();
+
+      // Delete user from Firebase Auth
+      await currentUser!.delete();
+
+      return AuthResult(
+        success: true,
+        message: 'Konto zostało pomyślnie usunięte',
+      );
+    } on FirebaseAuthException catch (e) {
+      // If the error is requires-recent-login, user needs to re-authenticate
+      if (e.code == 'requires-recent-login') {
+        return AuthResult(
+          success: false,
+          error: 'Aby usunąć konto, musisz się najpierw wylogować i zalogować ponownie',
+        );
+      }
+      return AuthResult(success: false, error: _getErrorMessage(e.code));
+    } catch (e) {
+      return AuthResult(
+        success: false,
+        error: 'Wystąpił błąd podczas usuwania konta: $e',
+      );
     }
   }
 
