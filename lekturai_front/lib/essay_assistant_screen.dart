@@ -7,6 +7,7 @@ import 'theme/text_styles.dart';
 import 'widgets/context_selector.dart';
 import 'widgets/selected_contexts_list.dart';
 import 'widgets/essay_contexts_result.dart';
+import 'widgets/common_scaffold.dart';
 
 class EssayAssistantScreen extends StatefulWidget {
   const EssayAssistantScreen({super.key});
@@ -397,12 +398,10 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Asystent Rozprawki'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+    return CommonScaffold(
+      title: 'Asystent Rozprawki',
+      showDrawer: true,
+      useResponsiveLayout: false,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: AppSpacing.safeAreaPadding,

@@ -1,6 +1,7 @@
 // lib/widgets/app_scaffold.dart
 import 'package:flutter/material.dart';
 import 'package:lekturai_front/widgets/responsive_center.dart';
+import 'package:lekturai_front/widgets/custom_app_bar.dart';
 
 class CommonScaffold extends StatelessWidget {
   final String title;
@@ -22,7 +23,10 @@ class CommonScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: CustomAppBar(
+        title: title,
+        showDrawerIcon: showDrawer,
+      ),
       drawer: showDrawer
           ? Drawer(
               child: Column(
