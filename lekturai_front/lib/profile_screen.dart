@@ -3,6 +3,7 @@ import 'package:lekturai_front/services/auth_service.dart';
 import 'package:lekturai_front/services/profile_service.dart';
 import 'package:lekturai_front/widgets/change_password.dart';
 import 'package:lekturai_front/widgets/school_picker.dart';
+import 'package:lekturai_front/widgets/common_scaffold.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -173,8 +174,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Twój Profil')),
+    return CommonScaffold(
+      title: 'Twój Profil',
+      showDrawer: true,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
@@ -227,7 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '1250', // Mock points
+                            '${_userProfile?.balance ?? 0}',
                             style: Theme.of(context).textTheme.displayMedium
                                 ?.copyWith(
                                   color: Theme.of(context).primaryColor,
