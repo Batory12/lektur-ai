@@ -38,6 +38,13 @@ class School(BaseModel):
     city: str
     id: Optional[str] = Field(None, alias='doc_id')
 
+
+# ====================================================================
+# A. EXAM / QUESTION / ANSWER SCHEMAS (Firestore)
+# ====================================================================
+
+from app.exam_schemas import Exam as ExamSchema, Question as QuestionSchema, Answer as AnswerSchema, ExamQuestionLink
+
 # ====================================================================
 # B. CLASS MANAGING CONNECTION TO FIRESTORE (CRUD)
 # ====================================================================
@@ -52,6 +59,10 @@ class FirestoreManager:
         self.STATS_COLLECTION = 'user-all-time-stats'
         self.HISTORY_SUBCOLLECTION = 'history'
         self.SCHOOLS_COLLECTION = 'schools'
+        self.EXAMS_COLLECTION = 'exams'
+        self.QUESTIONS_COLLECTION = 'questions'
+        self.ANSWERS_COLLECTION = 'answers'
+        self.EXAM_QUESTION_LINKS_COLLECTION = 'exam-question-links'
         
         try:
             if not firebase_admin._apps:
@@ -62,6 +73,136 @@ class FirestoreManager:
         except Exception as e:
             self.db = None
             raise RuntimeError(f"Błąd inicjalizacji Firestore: {e}. Sprawdź SERVICE_ACCOUNT_PATH.")
+
+    # ---------------------------------
+    # CRUD OPERATIONS FOR EXAMS / QUESTIONS / ANSWERS
+    # ---------------------------------
+
+    # ➕ Create exam with questions & answers (from extracted JSON)
+    def create_exam_with_content(
+        self,
+        exam: ExamSchema,
+        questions: List[QuestionSchema],
+        answers: List[AnswerSchema],
+    ) -> Optional[str]:
+        """
+        Stores a single exam document and related questions/answers.
+
+        - Exam is stored in EXAMS_COLLECTION.
+        - Each Question is stored in QUESTIONS_COLLECTION.
+        - Each Answer is stored in ANSWERS_COLLECTION.
+        - Relationships exam <-> question are stored in EXAM_QUESTION_LINKS_COLLECTION.
+        - Answer.question_number is expected to match Question.number.
+        """
+        if not self.db:
+            return None
+
+        try:
+            batch = self.db.batch()
+
+            # 1. Create exam document
+            exam_ref = self.db.collection(self.EXAMS_COLLECTION).document()
+            exam_dict = exam.model_dump(exclude_none=True, exclude={'id'})
+            batch.set(exam_ref, exam_dict)
+
+            # Helper: map question_number -> AnswerSchema
+            answers_by_number: Dict[int, AnswerSchema] = {
+                a.question_number: a for a in answers
+            }
+
+            # 2. Create questions, answers and links
+            for idx, q in enumerate(questions):
+                # Question doc
+                q_ref = self.db.collection(self.QUESTIONS_COLLECTION).document()
+                q_dict = q.model_dump(exclude_none=True, exclude={'id'})
+                batch.set(q_ref, q_dict)
+
+                # Link exam <-> question
+                link_ref = self.db.collection(self.EXAM_QUESTION_LINKS_COLLECTION).document()
+                link = ExamQuestionLink(
+                    exam_id=exam_ref.id,
+                    question_id=q_ref.id,
+                    order=idx + 1,
+                )
+                batch.set(link_ref, link.model_dump(exclude_none=True, exclude={'id'}))
+
+                # Optional: answer for this question_number
+                answer = answers_by_number.get(q.number)
+                if answer:
+                    a_ref = self.db.collection(self.ANSWERS_COLLECTION).document()
+                    a_dict = answer.model_dump(exclude_none=True, exclude={'id'})
+                    # also store explicit foreign keys for easier querying
+                    a_dict['exam_id'] = exam_ref.id
+                    a_dict['question_doc_id'] = q_ref.id
+                    batch.set(a_ref, a_dict)
+
+            # 3. Commit batch
+            batch.commit()
+            return exam_ref.id
+        except Exception as e:
+            print(f"❌ Error creating exam with content: {e}")
+            return None
+
+    # 🔍 Get exam basic data
+    def get_exam(self, exam_id: str) -> Optional[ExamSchema]:
+        if not self.db:
+            return None
+        try:
+            doc = self.db.collection(self.EXAMS_COLLECTION).document(exam_id).get()
+            if doc.exists:
+                return ExamSchema(**doc.to_dict(), doc_id=doc.id)
+            return None
+        except Exception as e:
+            print(f"❌ Error reading exam: {e}")
+            return None
+
+    # 🔍 Get questions for exam (ordered)
+    def get_exam_questions(self, exam_id: str) -> List[QuestionSchema]:
+        if not self.db:
+            return []
+        try:
+            # 1. Get links ordered by 'order'
+            links_query = (
+                self.db.collection(self.EXAM_QUESTION_LINKS_COLLECTION)
+                .where('exam_id', '==', exam_id)
+                .order_by('order')
+            )
+            links_docs = list(links_query.stream())
+            question_ids = [d.get('question_id') for d in (doc.to_dict() for doc in links_docs)]
+
+            # 2. Fetch questions by ids
+            questions: List[QuestionSchema] = []
+            for qid in question_ids:
+                if not qid:
+                    continue
+                q_doc = self.db.collection(self.QUESTIONS_COLLECTION).document(qid).get()
+                if q_doc.exists:
+                    questions.append(QuestionSchema(**q_doc.to_dict(), doc_id=q_doc.id))
+
+            return questions
+        except Exception as e:
+            print(f"❌ Error reading exam questions: {e}")
+            return []
+
+    # 🔍 Get answers for exam (indexed by question_number)
+    def get_exam_answers(self, exam_id: str) -> Dict[int, AnswerSchema]:
+        if not self.db:
+            return {}
+        try:
+            query = self.db.collection(self.ANSWERS_COLLECTION).where('exam_id', '==', exam_id)
+            docs = query.stream()
+            result: Dict[int, AnswerSchema] = {}
+            for doc in docs:
+                data = doc.to_dict()
+                try:
+                    ans = AnswerSchema(**data, doc_id=doc.id)
+                    result[ans.question_number] = ans
+                except Exception as model_err:
+                    print(f"❌ Error parsing answer document {doc.id}: {model_err}")
+            return result
+        except Exception as e:
+            print(f"❌ Error reading exam answers: {e}")
+            return {}
 
     # ---------------------------------
     # CRUD OPERATIONS FOR 'users'
