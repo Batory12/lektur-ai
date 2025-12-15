@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone 
 import os
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -37,6 +38,7 @@ class UserAllTimeStats(BaseModel):
     longest_streak: int
     last_task_date: datetime 
     total_tasks_done: int
+    points: int
     user_id: str 
     id: Optional[str] = Field(None, alias='doc_id')
 
@@ -146,7 +148,27 @@ class FirestoreManager:
     # ---------------------------------
 
     # ➕ ADD STATS (Create)
-    def add_user_stats(self, stats_data: UserAllTimeStats, doc_id: Optional[str] = None) -> Optional[str]:
+    def update_stats_after_ex(self, user_id: str, points: int):
+        if not self.db: return None
+
+        stats = self.get_user_stats(user_id)
+        last_task_date_only = stats.last_task_date.date()
+        today_date_only = datetime.now(timezone.utc).date()
+
+        if last_task_date_only != today_date_only:
+            updated_stats = {}
+            updated_stats['current_streak'] = stats.current_streak + 1
+
+            if stats.current_streak + 1 > stats.longest_streak:
+                updated_stats['longest_streak'] = stats.current_streak + 1
+
+        updated_stats['last_task_date'] = datetime.now(timezone.utc)
+        updated_stats['points'] = stats.points + points
+        updated_stats['total_tasks_done'] = stats.total_tasks_done + 1
+
+        self.db.collection(self.STATS_COLLECTION).document(user_id).update(updated_stats)
+
+    def add_user_stats(self, stats_data: UserAllTimeStats, user_id :str) -> Optional[str]:
         if not self.db: return None
         
         # Ensure last_task_date has UTC timezone set
@@ -155,10 +177,10 @@ class FirestoreManager:
              
         data = stats_data.model_dump(exclude_none=True, exclude={'id'})
         try:
-            if doc_id:
+            if user_id:
                 # Use the provided ID (common scenario, e.g. user ID)
-                self.db.collection(self.STATS_COLLECTION).document(doc_id).set(data)
-                return doc_id
+                self.db.collection(self.STATS_COLLECTION).document(user_id).set(data)
+                return user_id
             else:
                 # Generate a new unique document ID and use SET
                 new_doc_ref = self.db.collection(self.STATS_COLLECTION).document()
@@ -169,13 +191,22 @@ class FirestoreManager:
             return None
             
     # 🔍 GET STATS (Read)
-    def get_user_stats(self, stat_id: str) -> Optional[UserAllTimeStats]:
+    def get_user_stats(self, user_id: str) -> Optional[UserAllTimeStats]:
         if not self.db: return None
         try:
-            doc = self.db.collection(self.STATS_COLLECTION).document(stat_id).get()
+            doc = self.db.collection(self.STATS_COLLECTION).document(user_id).get()
             if doc.exists:
                 return UserAllTimeStats(**doc.to_dict(), doc_id=doc.id)
-            return None
+            else:
+                new_stats = UserAllTimeStats(
+                    current_streak=0,
+                    longest_streak=0,
+                    last_task_date=datetime(1970, 1, 1, tzinfo=timezone.utc), # Bardzo stara data jako domyślna
+                    total_tasks_done=0,
+                    user_id=user_id
+                )
+                # Używamy user_id jako doc_id, zgodnie z ustaloną logiką
+                self.add_user_stats(new_stats, doc_id=user_id)
         except Exception as e:
             print(f"❌ Error reading stats: {e}")
             return None

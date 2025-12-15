@@ -4,19 +4,19 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-# Importujemy menedżera i schematy z firestore_manager.py
-# Zakładamy, że ten plik jest dostępny do importu
+# Import the manager and schemas from firestore_manager.py
+# We assume that file is available for import
 from db_service import FirestoreManager, UserAllTimeStats, User
 
-# --- Zmienne Środowiskowe / Konfiguracja ---
-# Klucz serwisowy dla Firestore powinien być załadowany
-# Upewnij się, że SERVICE_ACCOUNT_PATH w FirestoreManager jest poprawnie ustawiony
-# lub użyj zmiennej środowiskowej do jego dynamicznego ładowania.
+# --- Environment Variables / Configuration ---
+# Firestore service key should be loaded
+# Make sure SERVICE_ACCOUNT_PATH in FirestoreManager is set correctly
+# or use an environment variable for dynamic loading.
 
 
 def _get_yesterday_utc() -> datetime:
-    """Zwraca datę wczorajszego dnia o północy (00:00:00) w strefie UTC."""
-    # Używamy UTC, ponieważ FirestoreManager używa UTC
+    """Return yesterday's date at midnight (00:00:00) in UTC."""
+    # We use UTC because FirestoreManager uses UTC
     today = datetime.now(timezone.utc).date()
     yesterday = datetime(today.year, today.month, today.day, tzinfo=timezone.utc) - timedelta(days=1)
     return yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -24,90 +24,71 @@ def _get_yesterday_utc() -> datetime:
 
 def run_daily_update():
     """
-    Główna funkcja logiki codziennej aktualizacji statystyk.
-    
-    1. Pobiera listę wszystkich user_id.
-    2. Dla każdego user_id:
-       a. Sprawdza/Tworzy profil statystyk.
-       b. Aktualizuje serię (streak) na podstawie daty ostatniego zadania.
+    Main daily stats update logic.
+
+    1. Fetch list of all user_ids.
+    2. For each user_id:
+       a. Check/Create stats profile.
+       b. Update streak based on date of last task.
     """
-    print(f"--- Uruchomienie Codziennej Aktualizacji Statystyk: {datetime.now(timezone.utc)} ---")
+    print(f"--- Starting Daily Stats Update: {datetime.now(timezone.utc)} ---")
     
     try:
-        # Inicjalizacja menedżera Firestore
+        # Initialize Firestore manager
         manager = FirestoreManager()
         
     except RuntimeError as e:
-        print(f"BŁĄD KRYTYCZNY: Nie można zainicjalizować FirestoreManager. {e}")
+        print(f"CRITICAL ERROR: Unable to initialize FirestoreManager. {e}")
         return
 
-    # W FirestoreManager brakuje metody get_all_users.
-    # Użyjemy prostej funkcji do pobrania wszystkich ID użytkowników.
-    # W dużej aplikacji zalecany jest mechanizm paginacji.
+    # FirestoreManager lacks a get_all_users method.
+    # We'll use a simple function to fetch all user IDs.
+    # For a large application, pagination is recommended.
     try:
         user_docs = manager.db.collection(manager.USERS_COLLECTION).stream()
         all_user_ids: List[str] = [doc.id for doc in user_docs]
     except Exception as e:
-        print(f"BŁĄD: Nie można pobrać listy użytkowników: {e}")
+        print(f"ERROR: Unable to fetch list of users: {e}")
         return
 
     yesterday_midnight = _get_yesterday_utc()
-    print(f"Przetwarzam {len(all_user_ids)} użytkowników. Graniczna data wczoraj: {yesterday_midnight.date()}")
+    print(f"Processing {len(all_user_ids)} users. Cutoff (yesterday): {yesterday_midnight.date()}")
 
     for user_id in all_user_ids:
-        # 1. Pobierz obecne statystyki
+        # 1. Fetch current stats
         stats = manager.get_user_stats(user_id)
         
-        # Flaga do śledzenia, czy statystyki zostały zmienione
+        # Flag to track if stats were changed
         updated_data = {}
         
-        # Jeśli stats nie istnieją, tworzymy nowy profil (Krok 1)
-        if stats is None:
-            # Tworzenie nowego profilu statystyk (założenie, że user_id będzie też ID dokumentu statystyk)
-            new_stats = UserAllTimeStats(
-                current_streak=0,
-                longest_streak=0,
-                last_task_date=datetime(1970, 1, 1, tzinfo=timezone.utc), # Bardzo stara data jako domyślna
-                total_tasks_done=0,
-                user_id=user_id
-            )
-            # Używamy user_id jako doc_id, zgodnie z ustaloną logiką
-            manager.add_user_stats(new_stats, doc_id=user_id)
-            stats = new_stats
-            print(f"✅ Utworzono nowy profil statystyk dla użytkownika: {user_id}")
-            # Pomijamy dalszą aktualizację streaka, ponieważ jest to nowo utworzony profil.
-            continue 
-
-        # 2. Sprawdzenie streaka
-        
-        # Musimy porównywać tylko datę (bez godziny), aby sprawdzić, czy zadanie było "wczoraj"
+        # We must compare only the date (without time) to check if the task was "yesterday"
         last_task_date_only = stats.last_task_date.date()
         yesterday_date_only = yesterday_midnight.date()
         
-        # Sprawdzamy, czy ostatnie zadanie było WŁAŚNIE WCZORAJ
+        # Check if the last task was EXACTLY YESTERDAY
         if last_task_date_only == yesterday_date_only:
-            # Seria została już przedłużona (lub była to data dzisiejsza i zostanie przedłużona następnego dnia)
-            # Sprawdzamy jednak, czy seria już nie jest aktualna, to znaczy:
-            # Ostatnie zadanie było wczoraj, ale dzisiaj jeszcze nic nie zrobiono (normalne).
-            pass # Nie ruszamy streaka, bo jest aktualny, zadanie było wczoraj.
+            # The streak was already extended (or it was today's date and will be extended the next day)
+            # We also check that the streak isn't out of date, meaning:
+            # The last task was yesterday, but nothing has been done today (normal).
+            pass # Do not modify the streak because it's current; the task was yesterday.
         
-        # Jeśli ostatnie zadanie było PRZEDWCZORAJ lub wcześniej (streak przerwany)
+        # If the last task was THE DAY BEFORE YESTERDAY or earlier (streak broken)
         elif last_task_date_only < yesterday_date_only:
-            # Sprawdzamy, czy zadanie było w jakikolwiek inny dzień niż wczoraj
-            # Oznacza to, że streak jest przerwany (brak zadania wczoraj)
+            # Check whether the task was on any day other than yesterday
+            # This means the streak is broken (no task yesterday)
             if stats.current_streak > 0:
-                print(f"❌ Seria przerwana dla {user_id}. Reset z {stats.current_streak} do 0.")
+                print(f"❌ Streak broken for {user_id}. Reset from {stats.current_streak} to 0.")
                 updated_data['current_streak'] = 0
             
-        # Zapisanie zmian w Firestorze
+        # Save changes to Firestore
         if updated_data:
             manager.db.collection(manager.STATS_COLLECTION).document(user_id).update(updated_data)
-            print(f"🛠️ Zaktualizowano statystyki dla {user_id}: {updated_data}")
+            print(f"🛠️ Updated stats for {user_id}: {updated_data}")
             
-    print(f"--- Zakończenie Codziennej Aktualizacji Statystyk ---")
+    print(f"--- Finished Daily Stats Update ---")
 
 
 if __name__ == "__main__":
-    # Uruchomienie skryptu (symulacja uruchomienia przez scheduler)
-    # Wymaga ustawienia SERVICE_ACCOUNT_PATH w firestore_manager.py
+    # Run the script (simulate scheduler run)
+    # Requires SERVICE_ACCOUNT_PATH to be set in firestore_manager.py
     run_daily_update()
