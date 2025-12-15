@@ -111,23 +111,33 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onChartTypeChanged(ChartType newType) {
     if (newType == _selectedChartType) return;
     
+    // Temporarily update chart type to calculate available periods
+    final tempChartType = newType;
+    final previousChartType = _selectedChartType;
+    final previousPeriod = _selectedPeriod;
+    _selectedChartType = tempChartType;
+    
+    // Get available periods for the new chart type
+    final availablePeriods = _getAvailablePeriods();
+    
+    // Restore previous chart type before setState
+    _selectedChartType = previousChartType;
+    
+    // Determine the new period (keep current if available, otherwise use longest available)
+    final newPeriod = availablePeriods.contains(previousPeriod) 
+        ? previousPeriod 
+        : availablePeriods.last;
+    
+    // Now update with both chart type and period
     setState(() {
-      _selectedChartType = newType;
+      _selectedChartType = tempChartType;
+      _selectedPeriod = newPeriod;
     });
     
-    // Check if current period is still available for the new chart type
-    // We need to call this after setState so the widget tree is updated
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final availablePeriods = _getAvailablePeriods();
-      if (!availablePeriods.contains(_selectedPeriod)) {
-        setState(() {
-          // If current period is not available, switch to the longest available period
-          _selectedPeriod = availablePeriods.last;
-        });
-        // Reload data with new period
-        _loadData();
-      }
-    });
+    // Reload data if period changed
+    if (newPeriod != previousPeriod) {
+      _loadData();
+    }
   }
 
   @override
