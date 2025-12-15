@@ -195,6 +195,18 @@ class CustomChart extends StatelessWidget {
   }
 
   Widget _buildBarChart() {
+    // Safety check: ensure we have data
+    if (data.isEmpty) {
+      return Center(
+        child: Text(
+          'Brak danych do wyświetlenia',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.greyMedium,
+          ),
+        ),
+      );
+    }
+
     final maxValue = maxY ?? data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
     final minValue = minY ?? 0;
 
@@ -210,7 +222,8 @@ class CustomChart extends StatelessWidget {
             tooltipPadding: EdgeInsets.zero,
             tooltipMargin: 8,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              if (groupIndex >= data.length) return null;
+              // Safety check: ensure index is within bounds
+              if (groupIndex < 0 || groupIndex >= data.length) return null;
               final dataPoint = data[groupIndex];
               final tooltipText = tooltipBuilder?.call(dataPoint) ??
                   dataPoint.value.toStringAsFixed(0);
@@ -231,16 +244,17 @@ class CustomChart extends StatelessWidget {
               showTitles: true,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index >= 0 && index < data.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.xs),
-                    child: Text(
-                      data[index].label,
-                      style: AppTextStyles.bodySmall,
-                    ),
-                  );
+                // Safety check: ensure index is within bounds
+                if (index < 0 || index >= data.length) {
+                  return const SizedBox.shrink();
                 }
-                return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xs),
+                  child: Text(
+                    data[index].label,
+                    style: AppTextStyles.bodySmall,
+                  ),
+                );
               },
             ),
           ),
@@ -310,6 +324,18 @@ class CustomChart extends StatelessWidget {
   }
 
   Widget _buildLineChart() {
+    // Safety check: ensure we have data
+    if (data.isEmpty) {
+      return Center(
+        child: Text(
+          'Brak danych do wyświetlenia',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.greyMedium,
+          ),
+        ),
+      );
+    }
+
     final maxValue = maxY ?? data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
     final minValue = minY ?? 0;
 
@@ -323,16 +349,17 @@ class CustomChart extends StatelessWidget {
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 final index = spot.x.toInt();
-                if (index >= 0 && index < data.length) {
-                  final dataPoint = data[index];
-                  final tooltipText = tooltipBuilder?.call(dataPoint) ??
-                      '${dataPoint.label}\n${dataPoint.value.toStringAsFixed(0)}';
-                  return LineTooltipItem(
-                    tooltipText,
-                    AppTextStyles.bodySmall.copyWith(color: AppColors.white),
-                  );
+                // Safety check: ensure index is within bounds
+                if (index < 0 || index >= data.length) {
+                  return null;
                 }
-                return null;
+                final dataPoint = data[index];
+                final tooltipText = tooltipBuilder?.call(dataPoint) ??
+                    '${dataPoint.label}\n${dataPoint.value.toStringAsFixed(0)}';
+                return LineTooltipItem(
+                  tooltipText,
+                  AppTextStyles.bodySmall.copyWith(color: AppColors.white),
+                );
               }).toList();
             },
           ),
@@ -345,16 +372,17 @@ class CustomChart extends StatelessWidget {
               interval: data.length > 10 ? (data.length / 7).ceilToDouble() : 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index >= 0 && index < data.length) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.xs),
-                    child: Text(
-                      data[index].label,
-                      style: AppTextStyles.bodySmall,
-                    ),
-                  );
+                // Safety check: ensure index is within bounds
+                if (index < 0 || index >= data.length) {
+                  return const SizedBox.shrink();
                 }
-                return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.xs),
+                  child: Text(
+                    data[index].label,
+                    style: AppTextStyles.bodySmall,
+                  ),
+                );
               },
             ),
           ),

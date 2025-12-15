@@ -80,19 +80,50 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<TimePeriod> _getAvailablePeriods() {
     if (_selectedChartType == ChartType.bar) {
-      // Bar charts only support 7 and 14 days to fit on screen
-      return [TimePeriod.week, TimePeriod.twoWeeks];
+      // Bar charts support different periods based on screen width
+      final screenWidth = MediaQuery.of(context).size.width;
+      
+      // Calculate available horizontal space for the chart
+      // Account for screen padding (32px total) and card padding (32px total)
+      final chartWidth = screenWidth - 64;
+      
+      // Each bar needs ~40px of space (16px bar + 24px spacing)
+      final barSpaceNeeded = 40;
+      
+      // Calculate how many bars can fit
+      final maxBars = (chartWidth / barSpaceNeeded).floor();
+      
+      if (maxBars >= 30) {
+        // Wide screens (tablets/desktop) can show all periods
+        return TimePeriod.values;
+      } else if (maxBars >= 14) {
+        // Medium screens can show up to 14 days
+        return [TimePeriod.week, TimePeriod.twoWeeks];
+      } else {
+        // Small screens can only show 7 days
+        return [TimePeriod.week];
+      }
     }
-    // Line charts support all periods
+    // Line charts support all periods regardless of screen width
     return TimePeriod.values;
   }
 
   void _onChartTypeChanged(ChartType newType) {
+    if (newType == _selectedChartType) return;
+    
     setState(() {
       _selectedChartType = newType;
-      // If switching to bar chart and current period is 30 days, switch to 14 days
-      if (newType == ChartType.bar && _selectedPeriod == TimePeriod.month) {
-        _selectedPeriod = TimePeriod.twoWeeks;
+    });
+    
+    // Check if current period is still available for the new chart type
+    // We need to call this after setState so the widget tree is updated
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final availablePeriods = _getAvailablePeriods();
+      if (!availablePeriods.contains(_selectedPeriod)) {
+        setState(() {
+          // If current period is not available, switch to the longest available period
+          _selectedPeriod = availablePeriods.last;
+        });
         // Reload data with new period
         _loadData();
       }
@@ -122,12 +153,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        _selectedPeriod.label,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: AppColors.greyMedium,
-                        ),
-                      ),
                       Row(
                         children: [
                           // Chart Type Selector
@@ -185,7 +210,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: AppColors.white,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: AppColors.border),
-                            ),                          child: DropdownButton<TimePeriod>(
+                            ),                          
+                            child: DropdownButton<TimePeriod>(
                             value: _selectedPeriod,
                             underline: const SizedBox(),
                             isDense: true,
@@ -240,6 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Bar Chart
                   CustomChart(
+                    key: ValueKey('${_selectedChartType.name}_${_selectedPeriod.days}'),
                     title: 'Punkty zdobyte - ${_selectedPeriod.label.toLowerCase()}',
                     data: _chartData,
                     chartType: _selectedChartType,
