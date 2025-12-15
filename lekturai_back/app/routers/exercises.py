@@ -1,10 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends
 
-# --- Importy Gemini ---
-from google import genai
-from google.genai.errors import APIError
-
-from app.db_utils import db_manager
 from app.schemas import (
     GradeResponse,
     MaturaExercise,
@@ -14,58 +9,25 @@ from app.schemas import (
     ReadingExerciseSubmit,
 )
 
-# --- Konfiguracja Gemini ---
-try:
-    # Klient odczyta klucz z zmiennej środowiskowej GEMINI_API_KEY
-    ai_client = genai.Client()
-except Exception:
-    # W przypadku braku klucza, ustawiamy klienta na None i obsłużymy błąd później
-    ai_client = None
-    print(
-        "OSTRZEŻENIE: Klient Gemini nie został zainicjowany. Upewnij się, że GEMINI_API_KEY jest ustawiony."
-    )
-
+# Import the service and dependency
+from app.services.ai_service import AIService, get_ai_service
 
 router = APIRouter(tags=["Exercises"])
 
-
-# --- Funkcja pomocnicza do komunikacji z Gemini API ---
-def call_gemini_api(prompt: str, system_instruction: str = None) -> str:
-    if not ai_client:
-        raise HTTPException(
-            status_code=503,
-            detail="Usługa AI jest obecnie niedostępna (Brak klucza API).",
-        )
-
-    try:
-        config = {}
-        if system_instruction:
-            config["system_instruction"] = system_instruction
-
-        response = ai_client.models.generate_content(
-            model="gemini-2.5-flash", contents=prompt, config=config
-        )
-        return response.text
-    except APIError as e:
-        print(f"Błąd API Gemini: {e}")
-        raise HTTPException(
-            status_code=500, detail="Błąd podczas komunikacji z modelem AI."
-        )
-    except Exception as e:
-        print(f"Nieznany błąd: {e}")
-        raise HTTPException(status_code=500, detail="Wystąpił nieznany błąd serwera.")
-
-
 # --- Lektury ---
+
+
 @router.get("/reading_ex/{reading_name}", response_model=ReadingExerciseGen)
 def generate_reading_exercise(
-    reading_name: str, to_chapter: int | None = None
+    reading_name: str,
+    to_chapter: int | None = None,
+    ai_service: AIService = Depends(get_ai_service),
 ) -> ReadingExerciseGen:
     """Generuje zadanie z lektury przy użyciu Gemini."""
 
     chapter_info = f" do rozdziału {to_chapter}" if to_chapter else ""
 
-    # Krok 1: Przygotowanie Prompta
+    # Krok 1: Przygotowanie Prompta (Twoja oryginalna treść)
     prompt = (
         f"Jesteś nauczycielem polonistą. Wygeneruj jedno, konkretne zadanie otwarte (np. opis, interpretacja, rozprawka) "
         f"na podstawie lektury '{reading_name}'{chapter_info}. Pytanie powinno być sformułowane jako polecenie. "
@@ -73,8 +35,8 @@ def generate_reading_exercise(
         f"Tytuł oddziel od treści znakiem '#TITLE_SEP#'."
     )
 
-    # Krok 2: Wywołanie API
-    ai_response = call_gemini_api(prompt)
+    # Krok 2: Wywołanie API przez Service
+    ai_response = ai_service.generate_content(prompt)
 
     # Krok 3: Parsowanie odpowiedzi
     try:
@@ -83,7 +45,6 @@ def generate_reading_exercise(
             excercise_title=title.strip(), excercise_text=text.strip()
         )
     except ValueError:
-        # W przypadku, gdy model nie zwróci separatora (awaria), zwracamy standardowy błąd
         return ReadingExerciseGen(
             excercise_title=f"Awaryjne Zadanie z: {reading_name}",
             excercise_text="Opisz zachowanie bohatera w rozdziale... (Błąd generowania AI)",
@@ -91,13 +52,12 @@ def generate_reading_exercise(
 
 
 @router.post("/reading_ex", response_model=GradeResponse)
-def grade_reading_exercise(submission: ReadingExerciseSubmit) -> GradeResponse:
+def grade_reading_exercise(
+    submission: ReadingExerciseSubmit, ai_service: AIService = Depends(get_ai_service)
+) -> GradeResponse:
     """Ocenia zadanie z lektury przy użyciu Gemini."""
 
-    # TODO: need user id input
-    db_manager.update_stats_after_ex("user_name", 10)
-
-    # Krok 1: Przygotowanie Prompta do Oceny
+    # Krok 1: Przygotowanie Prompta do Oceny (Twoja oryginalna treść)
     prompt = (
         "Jesteś ekspertem oceniającym prace szkolne. Twoja rola to ocena i szczegółowy feedback. "
         f"Zadanie: '{submission.excercise_text}'\n"
@@ -108,8 +68,8 @@ def grade_reading_exercise(submission: ReadingExerciseSubmit) -> GradeResponse:
         "2. Szczegółowy feedback dla ucznia (co było dobre, co wymaga poprawy, z konkretnymi wskazówkami)."
     )
 
-    # Krok 2: Wywołanie API
-    ai_response = call_gemini_api(prompt)
+    # Krok 2: Wywołanie API przez Service
+    ai_response = ai_service.generate_content(prompt)
 
     # Krok 3: Parsowanie odpowiedzi
     try:
@@ -122,10 +82,11 @@ def grade_reading_exercise(submission: ReadingExerciseSubmit) -> GradeResponse:
 
 
 # --- Matura ---
-# Ten endpoint pozostaje bez zmian, ponieważ generuje prostą strukturę zadania
+
+
 @router.get("/matura_ex", response_model=MaturaExercise)
 def get_random_matura_task() -> MaturaExercise:
-    # Można by użyć AI do generowania treści, ale na razie używamy prostego szablonu
+    # Ten endpoint nie wymaga AI Service
     return MaturaExercise(
         excercise_id=101,
         excercise_title="Rozprawka",
@@ -135,14 +96,13 @@ def get_random_matura_task() -> MaturaExercise:
 
 @router.post("/matura_ex/{excercise_id}", response_model=MaturaGradeResponse)
 def solve_matura_task(
-    excercise_id: int, submission: MaturaSubmit
+    excercise_id: int,
+    submission: MaturaSubmit,
+    ai_service: AIService = Depends(get_ai_service),
 ) -> MaturaGradeResponse:
     """Ocenia zadanie maturalne przy użyciu Gemini."""
-    # TODO: need user id input
-    db_manager.update_stats_after_ex("user_name", 2)
 
-    # Krok 1: Przygotowanie Prompta do Oceny Maturalnej
-    # Używamy system_instruction, aby ustawić rolę modelu AI
+    # Krok 1: Przygotowanie Prompta (Twoja oryginalna treść)
     system_prompt = (
         "Jesteś rygorystycznym egzaminatorem maturalnym. Twoim celem jest ocena, feedback "
         "oraz podanie wzorcowej tezy/klucza odpowiedzi, ale w sekcjach wydzielonych separatorami."
@@ -158,22 +118,23 @@ def solve_matura_task(
         "FORMAT: [OCENA]#SEP1#[FEEDBACK]#SEP2#[KLUCZ_ODPOWIEDZI]"
     )
 
-    # Krok 2: Wywołanie API
-    ai_response = call_gemini_api(prompt, system_instruction=system_prompt)
+    # Krok 2: Wywołanie API przez Service
+    ai_response = ai_service.generate_content(prompt, system_instruction=system_prompt)
 
     # Krok 3: Parsowanie odpowiedzi
     try:
-        parts = ai_response.split("#SEP")
-        grade_str = parts[0].strip()
-        feedback = parts[1].strip().lstrip("123")  # Usuwamy ew. wiodące cyfry
-        answer_key = parts[2].strip().lstrip("123")  # Usuwamy ew. wiodące cyfry
+        # Rozdzielanie po separatorach zdefiniowanych w promptcie
+        part1, rest = ai_response.split("#SEP1#", 1)
+        feedback, answer_key = rest.split("#SEP2#", 1)
+
+        grade_str = part1.strip()
 
         return MaturaGradeResponse(
             excercise_id=excercise_id,
             user_answer=submission.user_answer,
             grade=float(grade_str),
-            feedback=feedback,
-            answer_key=answer_key,
+            feedback=feedback.strip(),
+            answer_key=answer_key.strip(),
         )
     except (ValueError, IndexError) as e:
         print(f"Błąd parsowania odpowiedzi Matura AI: {e}")

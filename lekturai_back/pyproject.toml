@@ -8,7 +8,9 @@ dependencies = [
     "uvicorn",
     "pydantic",
     "firebase-admin",
-    "python-dotenv"
+    "python-dotenv",
+    "google-genai>=1.55.0",
+    "python-dotenv>=1.2.1"
 ]
 
 [dependency-groups]
