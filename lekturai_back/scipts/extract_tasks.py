@@ -8,8 +8,13 @@ class Task(BaseModel):
     number: int = Field(description="Numer zadania")
     max_points: int = Field(description="Maksymalna liczba punktów za zadanie")
     question: str = Field(description="Treść zadania")
-
+class Text(BaseModel):
+    number: int = Field(description="Numer tekstu")
+    author: str = Field(description="Autor tekstu")
+    title: str = Field(description="Tytuł tekstu")
+    text: str = Field(description="Treść tekstu")
 class Exam(BaseModel):
+    texts: list[Text] = Field(description="Lista tekstów")
     tasks: list[Task] = Field(description="Lista zadań")
 llama_extract = LlamaExtract()
 
@@ -23,7 +28,7 @@ except ApiError as e:
     else:
         raise
 
-agent = llama_extract.create_agent(name="tasks-extractor", data_schema=Exam)
+agent = llama_extract.create_agent(name="tasks-extractor",data_schema=Exam)
 
 file = "/home/bartek/repos/lektur-ai/matury/jezyk-polski-2025-maj-matura-podstawowa.pdf"
 
