@@ -8,7 +8,7 @@ from app.services.ai_service import AIService, get_ai_service
 router = APIRouter(tags=["Search & Assistant"])
 
 
-@router.post("/find_contexts", response_model=List[FoundContext])
+@router.post("/contexts", response_model=List[FoundContext])
 def find_contexts(
     data: ContextRequest, ai_service: AIService = Depends(get_ai_service)
 ) -> List[FoundContext]:
