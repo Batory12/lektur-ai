@@ -7,6 +7,8 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "pydantic",
+    "firebase-admin",
+    "python-dotenv"
 ]
 
 [dependency-groups]

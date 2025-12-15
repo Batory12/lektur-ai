@@ -5,7 +5,11 @@ from firebase_admin import credentials, firestore
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone 
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
+#Classes are here for now, later i will sync it with schemas.
 class User(BaseModel):
     city: str
     className: str
@@ -20,10 +24,13 @@ class User(BaseModel):
 
 class UserHistoryEntry(BaseModel):
     type: str
-    prompt: str
+    question: str
     response: str
+    eval: str
+    points: int
     # Default value set to now 
     date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    id: Optional[str] = Field(None, alias='doc_id')
     
 class UserAllTimeStats(BaseModel):
     current_streak: int
@@ -38,14 +45,18 @@ class School(BaseModel):
     city: str
     id: Optional[str] = Field(None, alias='doc_id')
 
+class PagedHistoryResponse(BaseModel):
+    items: List[UserHistoryEntry] 
+    next_cursor: Optional[str] = None # ID ostatniego dokumentu na bieżącej stronie
+    has_more: bool
+
 # ====================================================================
 # B. CLASS MANAGING CONNECTION TO FIRESTORE (CRUD)
 # ====================================================================
-
 class FirestoreManager:
     
     # ⚠️ Zmień tę ścieżkę na ścieżkę do Twojego pliku JSON klucza serwisowego ⚠️
-    SERVICE_ACCOUNT_PATH = 'path/to/file' 
+    SERVICE_ACCOUNT_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
     
     def __init__(self):
         self.USERS_COLLECTION = 'users'
@@ -198,6 +209,58 @@ class FirestoreManager:
             return None
 
     # 🔍 Get History Entries (Read)
+    def get_history_by_range(
+        self,
+        stat_id: str,
+        type_filter: str,
+        sort_by: str = "date",
+        from_pos: int = 1, # e.g. 1
+        to_pos: int = 10    # e.g. 10
+    ) -> List[UserHistoryEntry]:
+        
+        if not self.db: return []
+        entries: List[UserHistoryEntry] = []
+        
+        try:
+            history_ref = (self.db.collection(self.STATS_COLLECTION)
+                                 .document(stat_id)
+                                 .collection(self.HISTORY_SUBCOLLECTION))
+
+            # --- COMPUTATION LOGIC ---
+            # If from_pos = 1, we skip nothing (offset = 0)
+            offset_value = max(0, from_pos - 1)
+            
+            # Number of items to fetch is the difference of positions + 1
+            # Example: from 1 to 10 -> (10 - 1) + 1 = 10 items
+            limit_value = to_pos - from_pos + 1
+
+            if limit_value <= 0:
+                return []
+
+            # --- BUILDING THE QUERY ---
+            # 1. Sort (sort first, then slice the range)
+            query = history_ref.order_by(sort_by, direction=firestore.Query.DESCENDING)
+
+            # 2. Filter (optional)
+            if type_filter:
+                query = query.where('type', '==', type_filter)
+
+            # 3. Slice the from-to range
+            query = query.offset(offset_value).limit(limit_value)
+
+            # --- FETCHING ---
+            docs = query.stream()
+            
+            for doc in docs:
+                data = doc.to_dict()
+                entries.append(UserHistoryEntry(**data, doc_id=doc.id))
+            
+            return entries
+
+        except Exception as e:
+            print(f"❌ Error in get_history_by_range: {e}")
+            return []
+    
     def get_history_entries(self, stat_id: str) -> List[UserHistoryEntry]:
         if not self.db: return []
         entries = []
