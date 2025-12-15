@@ -3,7 +3,7 @@
 uv run python3 main.py 
 ```
 # Firebase private key generation
-Go to Firebase Console -> select our project -> porject settings -> service accounts
+Go to Firebase Console -> select our project -> project settings -> service accounts
 -> firebase admin sdk -> generate new private key
 
 # Pushing code to production
