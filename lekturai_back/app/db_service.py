@@ -52,7 +52,7 @@ from app.exam_schemas import Exam as ExamSchema, Question as QuestionSchema, Ans
 class FirestoreManager:
     
     # ⚠️ Zmień tę ścieżkę na ścieżkę do Twojego pliku JSON klucza serwisowego ⚠️
-    SERVICE_ACCOUNT_PATH = 'path/to/file' 
+    SERVICE_ACCOUNT_PATH = "/home/bartek/repos/lektur-ai/lektur-ai-firebase-adminsdk-fbsvc-d4c4ac3e60.json"
     
     def __init__(self):
         self.USERS_COLLECTION = 'users'
