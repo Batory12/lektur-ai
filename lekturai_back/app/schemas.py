@@ -102,15 +102,21 @@ class ChatResponse(BaseModel):
     conversation_id: int
     message: str
 
+class Context(BaseModel):
+    context_type: str
+    context_additional_description: str
+
 # --- Search / Context ---
 class ContextRequest(BaseModel):
     title: str
-    contexts: list[str]
+    contexts: list[Context]
 
 class FoundContext(BaseModel):
-    found_context: str
-    context_n: int | None = None
-    argument: str | None = None
+    context_type: str
+    context_title: str
+    context_description: str
+
+
 
 class ReadingChapterInfo(BaseModel):
     n_chapters: int

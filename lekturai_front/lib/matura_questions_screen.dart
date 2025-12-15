@@ -8,9 +8,9 @@ class QuestionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CommonScaffold(
-      title: "Zadanie z lektury",
+      title: "Zadanie z matury",
       showDrawer: true,
-      body: QuestionAnswerContainer(),
+      body: QuestionAnswerContainer(isMatura: true),
     );
   }
 }

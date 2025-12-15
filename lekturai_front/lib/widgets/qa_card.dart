@@ -16,6 +16,7 @@ class QACard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
     return Card(
       color: color,
       surfaceTintColor: surfaceTintColor,
@@ -26,7 +27,7 @@ class QACard extends StatelessWidget {
           constraints: BoxConstraints(
             minWidth: 300.0,
             minHeight: 200.0,
-            maxWidth: 900.0,
+            maxWidth: screenWidth * 0.95,
           ),
           child: child,
         ),

@@ -192,6 +192,7 @@ class UserProfile {
   final String uid;
   final String email;
   final String displayName;
+  final int balance;
   final String? city;
   final String? school;
   final String? className;
@@ -204,6 +205,7 @@ class UserProfile {
     required this.uid,
     required this.email,
     required this.displayName,
+    this.balance = 0,
     this.city,
     this.school,
     this.className,
@@ -218,6 +220,7 @@ class UserProfile {
       uid: map['uid'] ?? '',
       email: map['email'] ?? '',
       displayName: map['displayName'] ?? '',
+      balance: map['balance'] ?? 0,
       city: map['city'],
       school: map['school'],
       className: map['className'],
@@ -233,6 +236,7 @@ class UserProfile {
       'uid': uid,
       'email': email,
       'displayName': displayName,
+      'balance': balance,
       'city': city,
       'school': school,
       'className': className,

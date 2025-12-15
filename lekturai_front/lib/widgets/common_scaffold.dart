@@ -1,12 +1,15 @@
 // lib/widgets/app_scaffold.dart
 import 'package:flutter/material.dart';
 import 'package:lekturai_front/widgets/responsive_center.dart';
+import 'package:lekturai_front/widgets/custom_app_bar.dart';
 
 class CommonScaffold extends StatelessWidget {
   final String title;
   final Widget body;
   final Widget? floatingActionButton;
   final bool showDrawer;
+  final bool useResponsiveLayout;
+  final bool useSafeArea; // New parameter to control SafeArea
 
   const CommonScaffold({
     super.key,
@@ -15,22 +18,36 @@ class CommonScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.showDrawer = true,
     this.useResponsiveLayout = true,
+    this.useSafeArea = true, // Default to true for Android compatibility
   });
-
-  final bool useResponsiveLayout;
 
   @override
   Widget build(BuildContext context) {
+    // Wrap body with SafeArea if needed
+    Widget bodyWidget = useResponsiveLayout
+        ? ResponsiveCenter(child: body)
+        : body;
+
+    if (useSafeArea) {
+      bodyWidget = SafeArea(
+        child: bodyWidget,
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: CustomAppBar(
+        title: title,
+        showDrawerIcon: showDrawer,
+      ),
       drawer: showDrawer
           ? Drawer(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 20.0, top: 20.0),
-                    child: Text('Aktywności'),
-                  ),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 20.0, top: 20.0),
+                      child: Text('Aktywności'),
+                    ),
                   ListTile(
                     leading: Icon(Icons.today),
                     title: Text('Zadania z lektur'),
@@ -87,9 +104,9 @@ class CommonScaffold extends StatelessWidget {
                   ),
                 ],
               ),
-            )
+            ))
           : null,
-      body: useResponsiveLayout ? ResponsiveCenter(child: body) : body,
+      body: bodyWidget,
       floatingActionButton: floatingActionButton,
     );
   }

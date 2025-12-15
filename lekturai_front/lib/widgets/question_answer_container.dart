@@ -1,9 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:lekturai_front/api/exercise.dart';
 import 'package:lekturai_front/widgets/qa_card.dart';
 import 'package:lekturai_front/widgets/text_or_loading.dart';
 
 class QuestionAnswerContainer extends StatefulWidget {
-  const QuestionAnswerContainer({super.key});
+  final String? questionTitle;
+  final String? questionText;
+  final String? answerText;
+  final String? evaluationTitle;
+  final String? evaluationText;
+  final bool questionInitiallyLoading;
+  final bool evalInitiallyLoading;
+  final bool isMatura;
+  //This is bad, I'll refactor it in fabled "Sometime Later"
+  final String? readingName;
+  final int? toChapter;
+
+  const QuestionAnswerContainer({
+    super.key,
+    this.questionTitle,
+    this.questionText,
+    this.answerText,
+    this.evaluationTitle,
+    this.evaluationText,
+    this.questionInitiallyLoading = true,
+    this.evalInitiallyLoading = true,
+    required this.isMatura,
+    this.readingName,
+    this.toChapter,
+  });
 
   @override
   State<StatefulWidget> createState() {
@@ -17,14 +42,88 @@ class QAState extends State<QuestionAnswerContainer> {
   String? answerText;
   String? evaluationTitle;
   String? evaluationText;
+  bool isMatura = true;
+  bool questionTitleLoading = true;
+  bool evalTitleLoading = true;
+  bool questionTextLoading = true;
+  bool evalTextLoading = true;
+  ExerciseApi api = ExerciseApi();
+  int? questionId;
+
+  //This is bad, I'll refactor it in fabled "Sometime Later"
+  String? readingName;
+  int? toChapter;
 
   final TextEditingController answerInput = TextEditingController();
 
-  void setAnswer(String newAnswer) {
+  Future<void> loadQuestion() async {
+    Exercise question = isMatura
+        ? await api.getMaturaExercise()
+        : await api.getReadingExercise(readingName!, toChapter);
+    setState(() {
+      questionText = question.text;
+      questionTitle = question.title;
+      questionTextLoading = false;
+      questionTitleLoading = false;
+    });
+    if (question is MaturaExercise) {
+      questionId = question.id;
+    }
+  }
+
+  Future<void> setMaturaAnswer(String newAnswer) async {
+    if ((isMatura && questionId == null) ||
+        questionText == null ||
+        questionTitle == null) {
+      throw Exception("no question loaded!");
+    }
     setState(() {
       answerText = newAnswer;
-      evaluationTitle = "test";
+      evaluationText = "";
     });
+    if (isMatura) {
+      final submit = MaturaSubmit(answer: newAnswer, id: questionId!);
+      final grade = await api.submitMaturaExercise(submit);
+      setState(() {
+        evaluationText = grade.feedback;
+        evaluationTitle = "Ocena: ${grade.grade}";
+        evalTextLoading = false;
+        evalTitleLoading = false;
+      });
+    } else {
+      final submit = ReadingExerciseSubmit(
+        answer: newAnswer,
+        text: questionText!,
+        title: questionTitle!,
+      );
+      final grade = await api.submitReadingExercise(submit);
+      setState(() {
+        evaluationText = grade.feedback;
+        evaluationTitle = "Ocena: ${grade.grade}";
+        evalTextLoading = false;
+        evalTitleLoading = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    questionText = widget.questionText;
+    questionTitle = widget.questionTitle;
+    answerText = widget.answerText;
+    evaluationTitle = widget.evaluationTitle;
+    evaluationText = widget.evaluationText;
+    questionTitleLoading = widget.questionInitiallyLoading;
+    questionTextLoading = widget.questionInitiallyLoading;
+    evalTitleLoading = widget.evalInitiallyLoading;
+    evalTextLoading = widget.evalInitiallyLoading;
+    isMatura = widget.isMatura;
+    readingName = widget.readingName;
+    toChapter = widget.toChapter;
+    super.initState();
+    if (questionText == null) {
+      loadQuestion();
+    }
   }
 
   @override
@@ -45,8 +144,14 @@ class QAState extends State<QuestionAnswerContainer> {
               QACard(
                 child: Column(
                   children: [
-                    TextOrLoading(text: "${questionTitle ?? ""} test"),
-                    TextOrLoading(text: questionText),
+                    TextOrLoading(
+                      text: questionTitle ?? "",
+                      finished: !questionTitleLoading,
+                    ),
+                    TextOrLoading(
+                      text: questionText,
+                      finished: !questionTextLoading,
+                    ),
                   ],
                 ),
               ),
@@ -71,7 +176,7 @@ class QAState extends State<QuestionAnswerContainer> {
                                 print(
                                   "user submitted: $answerInput",
                                 ); //yes, yes, this is a placeholder func
-                                setAnswer(answerInput.text);
+                                setMaturaAnswer(answerInput.text);
                               },
                               child: Text("Submit"),
                             ),
@@ -84,8 +189,14 @@ class QAState extends State<QuestionAnswerContainer> {
                   color: Colors.deepOrangeAccent,
                   child: Column(
                     children: [
-                      TextOrLoading(text: evaluationTitle),
-                      TextOrLoading(text: evaluationText),
+                      TextOrLoading(
+                        text: evaluationTitle,
+                        finished: !evalTitleLoading,
+                      ),
+                      TextOrLoading(
+                        text: evaluationText,
+                        finished: !evalTextLoading,
+                      ),
                     ],
                   ),
                 ),

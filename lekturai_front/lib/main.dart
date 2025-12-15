@@ -2,25 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:lekturai_front/firebase_options.dart';
-import 'package:lekturai_front/placeholder_screen.dart';
-import 'package:lekturai_front/questions_screen.dart';
+import 'package:lekturai_front/history_screen.dart';
+import 'package:lekturai_front/matura_questions_screen.dart';
+import 'package:lekturai_front/reading_question_screen.dart';
 import 'package:lekturai_front/register_screen.dart';
 import 'package:lekturai_front/widgets/auth_wrapper.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
+import 'essay_assistant_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Load environment variables
-  await dotenv.load(fileName: ".env");
-  
+
+  // Load environment variables (optional - don't crash if file doesn't exist)
+  try {
+    await dotenv.load(fileName: "assets/.env");
+  } catch (e) {
+    print('Warning: Could not load .env file: $e');
+    // Continue without .env file - will use defaults
+  }
+
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(const MyApp());
 }
 
@@ -90,10 +95,11 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
-        '/zlektur': (context) => const QuestionsScreen(),
-        '/zmatur': (context) => const PlaceholderScreen(),
-        '/rozprawka': (context) => const PlaceholderScreen(),
-        '/historia': (context) => const PlaceholderScreen(),
+        '/zlektur': (context) =>
+            const ReadingQuestionsScreen(readingName: "Lalka"),
+        '/zmatur': (context) => const QuestionsScreen(),
+        '/rozprawka': (context) => const EssayAssistantScreen(),
+        '/historia': (context) => const HistoryScreen(),
         '/profile': (context) => const ProfileScreen(),
       },
       initialRoute: '/',
