@@ -8,7 +8,6 @@ import 'package:lekturai_front/theme/text_styles.dart';
 enum ChartType {
   bar,
   line,
-  pie,
 }
 
 /// Enum for time periods
@@ -192,8 +191,6 @@ class CustomChart extends StatelessWidget {
         return _buildBarChart();
       case ChartType.line:
         return _buildLineChart();
-      case ChartType.pie:
-        return _buildPieChart();
     }
   }
 
@@ -422,80 +419,5 @@ class CustomChart extends StatelessWidget {
           ? const Duration(milliseconds: 300)
           : Duration.zero,
     );
-  }
-
-  Widget _buildPieChart() {
-    final total = data.fold<double>(0, (sum, item) => sum + item.value);
-
-    return PieChart(
-      PieChartData(
-        sections: data.asMap().entries.map((entry) {
-          final index = entry.key;
-          final dataPoint = entry.value;
-          final percentage = (dataPoint.value / total * 100);
-          final color = dataPoint.color ??
-              _generateColor(index, data.length);
-
-          return PieChartSectionData(
-            value: dataPoint.value,
-            title: showValues ? '${percentage.toStringAsFixed(1)}%' : '',
-            color: color,
-            radius: 100,
-            titleStyle: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.white,
-              fontWeight: FontWeight.bold,
-            ),
-            badgeWidget: enableInteraction
-                ? _buildBadge(dataPoint.label, color)
-                : null,
-            badgePositionPercentageOffset: 1.3,
-          );
-        }).toList(),
-        sectionsSpace: 2,
-        centerSpaceRadius: 40,
-        pieTouchData: PieTouchData(
-          enabled: enableInteraction,
-          touchCallback: (FlTouchEvent event, pieTouchResponse) {
-            // You can add custom touch handling here
-          },
-        ),
-      ),
-      swapAnimationDuration: enableAnimation
-          ? const Duration(milliseconds: 300)
-          : Duration.zero,
-    );
-  }
-
-  Widget _buildBadge(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.bodySmall.copyWith(
-          color: color,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Color _generateColor(int index, int total) {
-    final hue = (index * 360 / total) % 360;
-    return HSLColor.fromAHSL(1.0, hue, 0.7, 0.6).toColor();
   }
 }

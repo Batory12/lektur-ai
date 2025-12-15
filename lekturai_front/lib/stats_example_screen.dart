@@ -102,19 +102,6 @@ class _StatsExampleScreenState extends State<StatsExampleScreen> {
 
                   const SizedBox(height: AppSpacing.lg),
 
-                  // Pie Chart - Activity breakdown
-                  CustomChart(
-                    title: 'Podział aktywności',
-                    data: _activityData,
-                    chartType: ChartType.pie,
-                    showValues: true,
-                    height: 350,
-                    tooltipBuilder: (point) =>
-                        '${point.label}: ${point.value.toInt()} zadań',
-                  ),
-
-                  const SizedBox(height: AppSpacing.lg),
-
                   // Example: Custom styled bar chart
                   CustomChart(
                     title: 'Aktywność dzienna (niestandardowe kolory)',

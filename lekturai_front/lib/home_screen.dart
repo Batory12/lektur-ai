@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double _averagePoints = 0;
   ChartDataPoint? _bestDay;
   TimePeriod _selectedPeriod = TimePeriod.week;
+  ChartType _selectedChartType = ChartType.bar;
 
   @override
   void initState() {
@@ -77,6 +78,27 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  List<TimePeriod> _getAvailablePeriods() {
+    if (_selectedChartType == ChartType.bar) {
+      // Bar charts only support 7 and 14 days to fit on screen
+      return [TimePeriod.week, TimePeriod.twoWeeks];
+    }
+    // Line charts support all periods
+    return TimePeriod.values;
+  }
+
+  void _onChartTypeChanged(ChartType newType) {
+    setState(() {
+      _selectedChartType = newType;
+      // If switching to bar chart and current period is 30 days, switch to 14 days
+      if (newType == ChartType.bar && _selectedPeriod == TimePeriod.month) {
+        _selectedPeriod = TimePeriod.twoWeeks;
+        // Reload data with new period
+        _loadData();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return CommonScaffold(
@@ -106,31 +128,80 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: AppColors.greyMedium,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.xs,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: DropdownButton<TimePeriod>(
-                          value: _selectedPeriod,
-                          underline: const SizedBox(),
-                          isDense: true,
-                          items: TimePeriod.values.map((period) {
-                            return DropdownMenuItem<TimePeriod>(
-                              value: period,
-                              child: Text(
-                                period.label,
-                                style: AppTextStyles.bodyMedium,
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: _onPeriodChanged,
-                        ),
+                      Row(
+                        children: [
+                          // Chart Type Selector
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: DropdownButton<ChartType>(
+                              value: _selectedChartType,
+                              underline: const SizedBox(),
+                              isDense: true,
+                              items: const [
+                                DropdownMenuItem<ChartType>(
+                                  value: ChartType.bar,
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.bar_chart, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Słupkowy'),
+                                    ],
+                                  ),
+                                ),
+                                DropdownMenuItem<ChartType>(
+                                  value: ChartType.line,
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.show_chart, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Liniowy'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              onChanged: (ChartType? newType) {
+                                if (newType != null) {
+                                  _onChartTypeChanged(newType);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          // Period Selector
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.border),
+                            ),                          child: DropdownButton<TimePeriod>(
+                            value: _selectedPeriod,
+                            underline: const SizedBox(),
+                            isDense: true,
+                            items: _getAvailablePeriods().map((period) {
+                              return DropdownMenuItem<TimePeriod>(
+                                value: period,
+                                child: Text(
+                                  period.label,
+                                  style: AppTextStyles.bodyMedium,
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: _onPeriodChanged,
+                          ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -171,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   CustomChart(
                     title: 'Punkty zdobyte - ${_selectedPeriod.label.toLowerCase()}',
                     data: _chartData,
-                    chartType: ChartType.bar,
+                    chartType: _selectedChartType,
                     height: 300,
                     primaryColor: AppColors.primary,
                     showGrid: true,
