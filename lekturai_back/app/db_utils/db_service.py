@@ -17,7 +17,7 @@ load_dotenv()
 # ====================================================================
 class FirestoreManager:
     
-    # ⚠️ Zmień tę ścieżkę na ścieżkę do Twojego pliku JSON klucza serwisowego ⚠️
+    # ⚠️ Change this path to the path to your service account JSON key file ⚠️
     SERVICE_ACCOUNT_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
     
     def __init__(self):
@@ -34,7 +34,7 @@ class FirestoreManager:
             self.db = firestore.client()
         except Exception as e:
             self.db = None
-            raise RuntimeError(f"Błąd inicjalizacji Firestore: {e}. Sprawdź SERVICE_ACCOUNT_PATH.")
+            raise RuntimeError(f"Error initializing Firestore: {e}. Check SERVICE_ACCOUNT_PATH.")
 
     # ---------------------------------
     # CRUD OPERATIONS FOR 'users'
@@ -111,7 +111,7 @@ class FirestoreManager:
             with open("/tmp/db_error_log.txt", "a") as f:
                 f.write(f"{datetime.now(timezone.utc)} - {message}\n")
         except Exception as file_e:
-            # Prawdopodobnie brak uprawnień do zapisu, ignorujemy.
+            # Probably no write permission; ignore.
             pass
 
     def update_stats_after_ex(self, user_id: str, points: int):
@@ -123,7 +123,7 @@ class FirestoreManager:
         last_task_date_only = stats.last_task_date.date()
         today_date_only = datetime.now(timezone.utc).date()
         updated_stats = {}
-        
+
         if last_task_date_only != today_date_only:
             updated_stats['current_streak'] = stats.current_streak + 1
 
@@ -169,7 +169,7 @@ class FirestoreManager:
                 new_stats = UserAllTimeStats(
                     current_streak=0,
                     longest_streak=0,
-                    last_task_date=datetime(1970, 1, 1, tzinfo=timezone.utc), # Bardzo stara data jako domyślna
+                    last_task_date=datetime(1970, 1, 1, tzinfo=timezone.utc), # Very old date as default
                     total_tasks_done=0
                 )
                 self.add_user_stats(new_stats, user_id)
