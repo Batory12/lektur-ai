@@ -1,5 +1,6 @@
-from pydantic import BaseModel
-from datetime import datetime
+from pydantic import BaseModel, Field
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timezone
 
 # --- Auth ---
 class LoginRequest(BaseModel):
@@ -19,10 +20,36 @@ class RecentQuestion(BaseModel):
     feedback: str
     grade: float
 
-class HistoryEntry(BaseModel):
-    date: datetime
-    summary: str
+class UserHistoryEntry(BaseModel):
+    type: str
+    question: str
+    response: str
+    eval: str
     points: int
+    # Default value set to now 
+    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    id: Optional[str] = Field(None, alias='doc_id')
+
+# USER
+class User(BaseModel):
+    city: str
+    className: str
+    createdAt: datetime
+    displayName: str
+    email: str
+    lastLoginAt: datetime
+    notificationFrequency: str
+    school: str
+    updatedAt: datetime
+    id: Optional[str] = Field(None, alias='doc_id')
+
+class UserAllTimeStats(BaseModel):
+    current_streak: int
+    longest_streak: int
+    last_task_date: datetime 
+    total_tasks_done: int
+    points: int
+    id: Optional[str] = Field(None, alias='doc_id')
 
 # --- Exercises (Lektury) ---
 class ReadingExerciseGen(BaseModel):
@@ -57,8 +84,9 @@ class City(BaseModel):
     name: str
 
 class School(BaseModel):
-    school_id: int
-    school_name: str
+    name: str
+    city: str
+    id: Optional[str] = Field(None, alias='doc_id')
 
 class SchoolAssign(BaseModel):
     school_id: int

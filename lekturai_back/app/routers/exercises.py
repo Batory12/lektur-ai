@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from app.db_utils import db_manager
 from app.schemas import (
     ReadingExerciseGen, ReadingExerciseSubmit, GradeResponse,
     MaturaExercise, MaturaSubmit, MaturaGradeResponse
@@ -16,6 +17,8 @@ def generate_reading_exercise(reading_name: str, to_chapter: int | None = None) 
 
 @router.post("/reading_ex", response_model=GradeResponse)
 def grade_reading_exercise(submission: ReadingExerciseSubmit) -> GradeResponse:
+    #need user id input
+    db_manager.update_stats_after_ex('user_name', 10)
     return GradeResponse(grade=5.0, feedback="Świetna analiza.")
 
 # --- Matura ---
@@ -29,6 +32,8 @@ def get_random_matura_task() -> MaturaExercise:
 
 @router.post("/matura_ex/{excercise_id}", response_model=MaturaGradeResponse)
 def solve_matura_task(excercise_id: int, submission: MaturaSubmit) -> MaturaGradeResponse:
+    #need user id input
+    db_manager.update_stats_after_ex('user_name', 2)
     return MaturaGradeResponse(
         excercise_id=excercise_id,
         user_answer=submission.user_answer,

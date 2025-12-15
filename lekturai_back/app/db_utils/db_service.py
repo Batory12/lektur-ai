@@ -7,50 +7,10 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone 
 import os
 from datetime import datetime, timedelta, timezone
+from app.schemas import User, UserAllTimeStats, UserHistoryEntry, School
 from dotenv import load_dotenv
 
 load_dotenv()
-#Classes are here for now, later i will sync it with schemas.
-class User(BaseModel):
-    city: str
-    className: str
-    createdAt: datetime
-    displayName: str
-    email: str
-    lastLoginAt: datetime
-    notificationFrequency: str
-    school: str
-    updatedAt: datetime
-    id: Optional[str] = Field(None, alias='doc_id')
-
-class UserHistoryEntry(BaseModel):
-    type: str
-    question: str
-    response: str
-    eval: str
-    points: int
-    # Default value set to now 
-    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    id: Optional[str] = Field(None, alias='doc_id')
-    
-class UserAllTimeStats(BaseModel):
-    current_streak: int
-    longest_streak: int
-    last_task_date: datetime 
-    total_tasks_done: int
-    points: int
-    user_id: str 
-    id: Optional[str] = Field(None, alias='doc_id')
-
-class School(BaseModel):
-    name: str
-    city: str
-    id: Optional[str] = Field(None, alias='doc_id')
-
-class PagedHistoryResponse(BaseModel):
-    items: List[UserHistoryEntry] 
-    next_cursor: Optional[str] = None # ID ostatniego dokumentu na bieżącej stronie
-    has_more: bool
 
 # ====================================================================
 # B. CLASS MANAGING CONNECTION TO FIRESTORE (CRUD)
@@ -146,17 +106,25 @@ class FirestoreManager:
     # ---------------------------------
     # CRUD OPERATIONS FOR 'user-all-time-stats'
     # ---------------------------------
+    def log_to_file(self, message):
+        try:
+            with open("/tmp/db_error_log.txt", "a") as f:
+                f.write(f"{datetime.now(timezone.utc)} - {message}\n")
+        except Exception as file_e:
+            # Prawdopodobnie brak uprawnień do zapisu, ignorujemy.
+            pass
 
-    # ➕ ADD STATS (Create)
     def update_stats_after_ex(self, user_id: str, points: int):
         if not self.db: return None
 
         stats = self.get_user_stats(user_id)
+        #if stats is None: return
+
         last_task_date_only = stats.last_task_date.date()
         today_date_only = datetime.now(timezone.utc).date()
-
+        updated_stats = {}
+        
         if last_task_date_only != today_date_only:
-            updated_stats = {}
             updated_stats['current_streak'] = stats.current_streak + 1
 
             if stats.current_streak + 1 > stats.longest_streak:
@@ -178,7 +146,7 @@ class FirestoreManager:
         data = stats_data.model_dump(exclude_none=True, exclude={'id'})
         try:
             if user_id:
-                # Use the provided ID (common scenario, e.g. user ID)
+                # Use the provided ID
                 self.db.collection(self.STATS_COLLECTION).document(user_id).set(data)
                 return user_id
             else:
@@ -202,11 +170,10 @@ class FirestoreManager:
                     current_streak=0,
                     longest_streak=0,
                     last_task_date=datetime(1970, 1, 1, tzinfo=timezone.utc), # Bardzo stara data jako domyślna
-                    total_tasks_done=0,
-                    user_id=user_id
+                    total_tasks_done=0
                 )
-                # Używamy user_id jako doc_id, zgodnie z ustaloną logiką
-                self.add_user_stats(new_stats, doc_id=user_id)
+                self.add_user_stats(new_stats, user_id)
+                return new_stats
         except Exception as e:
             print(f"❌ Error reading stats: {e}")
             return None

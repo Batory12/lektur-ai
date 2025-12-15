@@ -1,9 +1,8 @@
 from typing import Optional, List
 from fastapi import APIRouter, Query
 from datetime import datetime
-from app.schemas import RecentQuestion, HistoryEntry
+from app.schemas import RecentQuestion, UserHistoryEntry
 from app.db_utils import db_manager
-from app.db_utils.db_service import FirestoreManager, UserHistoryEntry
 
 router = APIRouter(tags=["History"])
 
@@ -13,7 +12,7 @@ def get_readings_history(user_id: str, sort_by: str, from_: int, to: int)->List[
     hist = db_manager.get_history_by_range(user_id, "reading", sort_by, from_, to)
     return hist
 
-@router.get("/exercise_history", response_model=List[HistoryEntry])
+@router.get("/exercise_history", response_model=List[UserHistoryEntry])
 def get_exercise_history(user_id: str, sort_by: str, from_: int, to: int)->List[UserHistoryEntry]:
     hist = db_manager.get_history_by_range(user_id, "exercise", sort_by, from_, to)
     return hist
