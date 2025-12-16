@@ -73,9 +73,9 @@ class HistoryScreenState extends State<HistoryScreen> {
     return CommonScaffold(
       title: 'History',
       body: ListView(
+        key: ValueKey(loadedItems.length),
         controller: scroller,
         children: loadedItems,
-        key: ValueKey(loadedItems.length),
       ),
       showDrawer: true,
     );
