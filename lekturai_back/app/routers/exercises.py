@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 
+from app.db_utils import db_manager
 from app.schemas import (
     GradeResponse,
     MaturaExercise,
@@ -56,6 +57,8 @@ def grade_reading_exercise(
     submission: ReadingExerciseSubmit, ai_service: AIService = Depends(get_ai_service)
 ) -> GradeResponse:
     """Ocenia zadanie z lektury przy użyciu Gemini."""
+    # TODO: trzeba skads wziac userid
+    db_manager.update_stats_after_ex("user_name", 10)
 
     # Krok 1: Przygotowanie Prompta do Oceny (Twoja oryginalna treść)
     prompt = (
@@ -101,6 +104,8 @@ def solve_matura_task(
     ai_service: AIService = Depends(get_ai_service),
 ) -> MaturaGradeResponse:
     """Ocenia zadanie maturalne przy użyciu Gemini."""
+    # TODO: trzeba skaads wziac id usera
+    db_manager.update_stats_after_ex("user_name", 10)
 
     # Krok 1: Przygotowanie Prompta (Twoja oryginalna treść)
     system_prompt = (
