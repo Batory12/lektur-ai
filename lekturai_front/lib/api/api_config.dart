@@ -12,6 +12,8 @@ class ApiConfig {
   static const String recentQuestionsEndpoint = '/recent_questions';
   static const String readingExcerciseEndpoint = '/reading_ex';
   static const String maturaExcerciseEndpoint = '/matura_ex';
+  static const String readingsHistoryEndpoint = '/readings_history';
+  static const String maturaHistoryEndpoint = '/exercise_history';
 
   static String get contextsUrl => baseUrl + contextsEndpoint;
   static String urlFor(String endpoint) => baseUrl + endpoint;
