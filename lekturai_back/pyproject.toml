@@ -8,7 +8,9 @@ dependencies = [
     "uvicorn",
     "pydantic",
     "firebase-admin",
-    "python-dotenv"
+    "python-dotenv",
+    "google-genai>=1.55.0",
+    "python-dotenv>=1.2.1"
 ]
 
 [dependency-groups]
@@ -21,3 +23,5 @@ python_version = "3.11"
 strict = true
 ignore_missing_imports = true
 plugins = ["pydantic.mypy"]
+allow-insecure-host = ["pypi.org", "files.pythonhosted.org"]
+native-tls = true
