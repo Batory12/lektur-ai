@@ -17,21 +17,25 @@ class HistoryScreenState extends State<HistoryScreen> {
   List<Widget> loadedItems = <Widget>[];
   final ScrollController scroller = ScrollController();
   double screenHeight = 0.0;
-  int last_loaded = 0;
+  int lastLoaded = 0;
+  bool noMoreData = false;
   HistoryApi api = HistoryApi();
   ProfileService profile = ProfileService();
   String? uid;
 
   void _onScroll() {
-    if (scroller.position.pixels >=
-        scroller.position.maxScrollExtent - screenHeight * 2) {
-      loadMoreItems(last_loaded + 1, last_loaded + 5);
-      last_loaded += 5;
+    if (!noMoreData &&
+        scroller.position.pixels >=
+            scroller.position.maxScrollExtent - screenHeight * 2) {
+      loadMoreItems(lastLoaded + 1, lastLoaded + 5).then((_) {
+        setState(() {});
+      });
+      lastLoaded += 5;
     }
   }
 
   Future<void> loadMoreItems(int from, int to) async {
-    List<HistoryQuestion> questions = await api.getMaturaHistory(
+    List<HistoryQuestion> questions = await api.getReadingsHistory(
       from: from,
       to: to,
       uid: uid!,
@@ -44,15 +48,16 @@ class HistoryScreenState extends State<HistoryScreen> {
             answerText: question.answer,
             evaluationText: question.eval,
             evaluationTitle: "${question.points}",
+            evalInitiallyLoading: false,
+            questionInitiallyLoading: false,
           ),
         )
         .toList();
-    setState(() {
-      loadedItems.addAll(loaded);
-      if (loaded.length < to - from) {
-        loadedItems.add(Text("No more items to load."));
-      }
-    });
+    loadedItems.addAll(loaded);
+    if (loaded.length < to - from) {
+      loadedItems.add(Text("No more items to load."));
+      noMoreData = true;
+    }
   }
 
   @override
@@ -62,8 +67,10 @@ class HistoryScreenState extends State<HistoryScreen> {
     if (uid == null) {
       throw Exception("Can't find current user");
     }
-    loadMoreItems(0, 5);
-    last_loaded = 5;
+    loadMoreItems(0, 5).then((_) {
+      setState(() {});
+    });
+    lastLoaded = 5;
     super.initState();
   }
 
@@ -71,12 +78,9 @@ class HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     screenHeight = MediaQuery.of(context).size.height;
     return CommonScaffold(
+      key: ValueKey(loadedItems.length),
       title: 'History',
-      body: ListView(
-        key: ValueKey(loadedItems.length),
-        controller: scroller,
-        children: loadedItems,
-      ),
+      body: ListView(controller: scroller, children: loadedItems),
       showDrawer: true,
     );
   }
