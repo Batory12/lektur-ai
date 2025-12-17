@@ -251,7 +251,7 @@ def solve_matura_task(
 
         db_manager.update_stats_after_ex(user_id, int(grade_val))
         db_manager.save_matura_ex_to_history(
-            user_id, submission, int(grade_val), feedback.strip()
+            user_id, question.text, submission.user_answer, int(grade_val), feedback.strip()
         )
 
         return MaturaGradeResponse(
