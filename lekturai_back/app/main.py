@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import history, exercises, schools, chat, search
+from app.routers import history, exercises, schools, chat, search, stats
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -18,6 +18,7 @@ app.include_router(exercises.router)
 app.include_router(schools.router)
 app.include_router(chat.router)
 app.include_router(search.router)
+app.include_router(stats.router)
 
 @app.get("/")
 def root() -> dict[str, str]:

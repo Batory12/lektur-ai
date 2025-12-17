@@ -2,12 +2,11 @@
 
 import firebase_admin
 from firebase_admin import credentials, firestore
-from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone 
 import os
 from datetime import datetime, timedelta, timezone
-from app.schemas import User, UserAllTimeStats, UserHistoryEntry, School
+from app.schemas import *
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,6 +24,7 @@ class FirestoreManager:
         self.STATS_COLLECTION = 'user-all-time-stats'
         self.HISTORY_SUBCOLLECTION = 'history'
         self.SCHOOLS_COLLECTION = 'schools'
+        self.QUESTIONS_COLLECTION = 'questions'
         
         try:
             if not firebase_admin._apps:
@@ -178,19 +178,90 @@ class FirestoreManager:
             print(f"❌ Error reading stats: {e}")
             return None
 
+
+    def avg_scores(self, school_name: str, city: str, class_name: Optional[str]):
+        try:
+            if class_name is None:
+                users_query = self.db.collection(self.USERS_COLLECTION).where('city', '==', city).where('school', '==', school_name)
+            else:
+                users_query = self.db.collection(self.USERS_COLLECTION).where('city', '==', city).where('school', '==', school_name).where('className', '==', class_name)
+            
+            users_docs = users_query.get()
+            
+            if not users_docs:
+                print("Users not found.")
+                return 0.0, 0.0
+
+            user_ids = [doc.id for doc in users_docs]
+            print(f"Found {len(user_ids)} users.")
+
+        except Exception as e:
+            print(f"Error while fetching student IDs from the 'users' collection: {e}")
+            return 0.0, 0.0
+
+        total_points = 0
+        total_streak = 0
+        valid_points_count = 0
+        valid_streak_count = 0
+        
+        # NOTE: Firestore 'in' query (documents by ID) has a limit of 10 elements.
+        # For a larger number of students, IDs must be split into batches of max 10.
+        batch_size = 10
+        
+        for i in range(0, len(user_ids), batch_size):
+            batch_ids = user_ids[i:i + batch_size]
+            
+            try:
+                # Use field path 'document_id()' and the 'in' operator
+                stats_query = self.db.collection(self.STATS_COLLECTION).where('__name__', 'in', batch_ids)
+                stats_docs = stats_query.get()
+
+                for doc in stats_docs:
+                    data = doc.to_dict()
+                    
+                    if data and isinstance(data.get('points'), (int)):
+                        total_points += data['points']
+                        valid_points_count += 1
+                    else:
+                        print(f"Warning: Stats document for ID {doc.id} does not have a valid 'points' field. Skipping.")
+                    
+                    if data and isinstance(data.get('current_streak'), (int)):
+                        total_streak += data['current_streak']
+                        valid_streak_count += 1
+                    else:
+                        print(f"Warning: Stats document for ID {doc.id} does not have a valid 'current_streak' field. Skipping.")
+
+            except Exception as e:
+                print(f"Error while fetching stats for ID batch: {e}")
+                
+        
+        if valid_streak_count == 0:
+            print("No valid streak data found to compute the average.")
+            average_streak = 0.0
+        else:
+            average_streak = total_streak / valid_streak_count
+        
+        if valid_points_count == 0:
+            print("No valid point data found to compute the average.")
+            average_points = 0.0
+        else:
+            average_points = total_points / valid_points_count
+
+        return average_points, average_streak
+     
     # ---------------------------------
     # CRUD OPERATIONS FOR 'history' SUBCOLLECTION
     # ---------------------------------
 
     # ➕ Add History Entry (Create)
-    def add_history_entry(self, stat_id: str, entry_data: UserHistoryEntry) -> Optional[str]:
+    def add_history_entry(self, user_id: str, entry_data: UserHistoryEntry) -> Optional[str]:
         if not self.db: return None
         data = entry_data.model_dump(exclude_none=True)
         
         try:
             # 1. Get reference to the 'history' subcollection
             history_collection_ref = (self.db.collection(self.STATS_COLLECTION)
-                                    .document(stat_id)
+                                    .document(user_id)
                                     .collection(self.HISTORY_SUBCOLLECTION))
             
             # 2. Generate a new document reference (with unique ID) in the subcollection
@@ -206,6 +277,30 @@ class FirestoreManager:
             print(f"❌ Error adding history entry: {e}")
             return None
 
+    def save_readings_to_history(self, user_id: str, submission: ReadingExerciseSubmit, points: int, eval: str):
+        new_data: UserHistoryEntry = {}
+        new_data['date'] = datetime.now(timezone.utc)
+        new_data['eval'] = eval
+        new_data['points'] = points
+        new_data['question'] = submission.excercise_text
+        new_data['response'] = submission.user_answer
+        new_data['type'] = 'reading'
+
+        self.add_history_entry(user_id, new_data)
+        return None
+    
+    def save_matura_ex_to_history(self, user_id: str, submission: MaturaGradeResponse, points: int, eval: str):
+        new_data: UserHistoryEntry = {}
+        new_data['date'] = datetime.now(timezone.utc)
+        new_data['eval'] = eval
+        new_data['points'] = points
+        new_data['question'] = self.get_question_text_by_id(submission.excercise_id)
+        new_data['response'] = submission.user_answer
+        new_data['type'] = 'reading'
+
+        self.add_history_entry(user_id, new_data)
+        return None
+    
     # 🔍 Get History Entries (Read)
     def get_history_by_range(
         self,
@@ -349,3 +444,27 @@ class FirestoreManager:
         except Exception as e:
             print(f"❌ Error reading schools by name: {e}")
             return []
+        
+
+# QUESTION DATA BASE
+
+    def get_question_text_by_id(self, question_id: str) -> str | None:
+        try:
+            doc_ref = self.collection(self.QUESTIONS_COLLECTION).document(question_id)
+            
+            doc = doc_ref.get()
+
+            if doc.exists:
+                data = doc.to_dict()
+                
+                if data and 'text' in data:
+                    return data['text']
+                else:
+                    return None
+            else:
+                print(f"Error: Document with ID '{question_id}' was not found in the 'questions' collection.")
+                return None
+
+        except Exception as e:
+            print(f"An error occurred while fetching data: {e}")
+            return None

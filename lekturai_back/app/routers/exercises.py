@@ -54,11 +54,9 @@ def generate_reading_exercise(
 
 @router.post("/reading_ex", response_model=GradeResponse)
 def grade_reading_exercise(
-    submission: ReadingExerciseSubmit, ai_service: AIService = Depends(get_ai_service)
+    submission: ReadingExerciseSubmit, user_id: str, ai_service: AIService = Depends(get_ai_service),
 ) -> GradeResponse:
     """Ocenia zadanie z lektury przy użyciu Gemini."""
-    # TODO: trzeba skads wziac userid
-    db_manager.update_stats_after_ex("user_name", 10)
 
     # Krok 1: Przygotowanie Prompta do Oceny (Twoja oryginalna treść)
     prompt = (
@@ -75,8 +73,12 @@ def grade_reading_exercise(
     ai_response = ai_service.generate_content(prompt)
 
     # Krok 3: Parsowanie odpowiedzi
+    # TODO:: USTALIĆ JAK KONWERTOWAĆ GRADE NA POINTS!!!!!
+    # Czy grade może być int? 
     try:
         grade_str, feedback = ai_response.split("#GRADE_SEP#", 1)
+        db_manager.update_stats_after_ex(user_id, 2)
+        db_manager.save_readings_to_history(user_id, submission, 2, feedback.strip())
         return GradeResponse(grade=float(grade_str.strip()), feedback=feedback.strip())
     except (ValueError, IndexError):
         return GradeResponse(
@@ -101,11 +103,10 @@ def get_random_matura_task() -> MaturaExercise:
 def solve_matura_task(
     excercise_id: int,
     submission: MaturaSubmit,
+    user_id: str,
     ai_service: AIService = Depends(get_ai_service),
 ) -> MaturaGradeResponse:
     """Ocenia zadanie maturalne przy użyciu Gemini."""
-    # TODO: trzeba skaads wziac id usera
-    db_manager.update_stats_after_ex("user_name", 10)
 
     # Krok 1: Przygotowanie Prompta (Twoja oryginalna treść)
     system_prompt = (
@@ -134,6 +135,8 @@ def solve_matura_task(
 
         grade_str = part1.strip()
 
+        db_manager.update_stats_after_ex(user_id, int(grade_str))
+        db_manager.save_matura_ex_to_history(user_id, submission, int(grade_str), feedback.strip())
         return MaturaGradeResponse(
             excercise_id=excercise_id,
             user_answer=submission.user_answer,
