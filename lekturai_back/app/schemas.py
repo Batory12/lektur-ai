@@ -49,7 +49,7 @@ class User(BaseModel):
     updatedAt: datetime
     id: Optional[str] = Field(None, alias="doc_id")
 
-
+# --- STATS ---
 class UserAllTimeStats(BaseModel):
     current_streak: int
     longest_streak: int
@@ -58,6 +58,9 @@ class UserAllTimeStats(BaseModel):
     points: int
     id: Optional[str] = Field(None, alias="doc_id")
 
+class AvgScores(BaseModel):
+    avg_points: float
+    avg_streak: float
 
 # --- Exercises (Lektury) ---
 class ReadingExerciseGen(BaseModel):
