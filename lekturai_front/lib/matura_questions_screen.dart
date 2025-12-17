@@ -10,7 +10,9 @@ class QuestionsScreen extends StatelessWidget {
     return CommonScaffold(
       title: "Zadanie z matury",
       showDrawer: true,
-      body: QuestionAnswerContainer(isMatura: true),
+      body: SingleChildScrollView(
+        child: QuestionAnswerContainer(isMatura: true),
+      ),
     );
   }
 }

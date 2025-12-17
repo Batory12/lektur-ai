@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 
 class TextOrLoading extends StatelessWidget {
   final String? text;
@@ -8,21 +9,11 @@ class TextOrLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        style: Theme.of(context).textTheme.bodyMedium,
-        text: text ?? "",
-        children: [
-          if (!finished)
-            WidgetSpan(
-              child: SizedBox(
-                width: 16.0,
-                height: 16.0,
-                child: CircularProgressIndicator(),
-              ),
-            ),
-        ],
-      ),
-    );
+    return text == null
+        ? CircularProgressIndicator()
+        : MarkdownBody(
+            styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)),
+            data: text!,
+          );
   }
 }

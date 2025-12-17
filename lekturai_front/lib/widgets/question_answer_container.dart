@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lekturai_front/api/exercise.dart';
+import 'package:lekturai_front/theme/colors.dart';
+import 'package:lekturai_front/theme/text_styles.dart';
 import 'package:lekturai_front/widgets/qa_card.dart';
 import 'package:lekturai_front/widgets/text_or_loading.dart';
 
@@ -129,34 +131,29 @@ class QAState extends State<QuestionAnswerContainer> {
   @override
   Widget build(BuildContext context) {
     return Theme(
-      data: ThemeData(
-        cardTheme: CardThemeData(
-          margin: EdgeInsets.all(16.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-        ),
-      ),
-      child: SingleChildScrollView(
-        child: IntrinsicWidth(
+      data: ThemeData(textTheme: AppTextStyles.appTextTheme),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              QACard(
-                child: Column(
-                  children: [
-                    TextOrLoading(
-                      text: questionTitle ?? "",
-                      finished: !questionTitleLoading,
-                    ),
-                    TextOrLoading(
-                      text: questionText,
-                      finished: !questionTextLoading,
-                    ),
-                  ],
-                ),
+              Column(
+                children: [
+                  TextOrLoading(
+                    text: questionTitle != null ? "# $questionTitle" : "",
+                    finished: !questionTitleLoading,
+                  ),
+                  TextOrLoading(
+                    text: questionText,
+                    finished: !questionTextLoading,
+                  ),
+                ],
               ),
               answerText != null
-                  ? QACard(color: Colors.cyan, child: Text(answerText!))
+                  ? QACard(
+                      color: AppColors.primaryLight,
+                      child: Text(answerText!),
+                    )
                   : QACard(
                       //"disappears" the card
                       color: Theme.of(context).canvasColor,
@@ -173,9 +170,6 @@ class QAState extends State<QuestionAnswerContainer> {
                             ),
                             ElevatedButton(
                               onPressed: () {
-                                print(
-                                  "user submitted: $answerInput",
-                                ); //yes, yes, this is a placeholder func
                                 setMaturaAnswer(answerInput.text);
                               },
                               child: Text("Submit"),
@@ -185,20 +179,17 @@ class QAState extends State<QuestionAnswerContainer> {
                       ),
                     ),
               if (evaluationText != null || evaluationTitle != null)
-                QACard(
-                  color: Colors.deepOrangeAccent,
-                  child: Column(
-                    children: [
-                      TextOrLoading(
-                        text: evaluationTitle,
-                        finished: !evalTitleLoading,
-                      ),
-                      TextOrLoading(
-                        text: evaluationText,
-                        finished: !evalTextLoading,
-                      ),
-                    ],
-                  ),
+                Column(
+                  children: [
+                    TextOrLoading(
+                      text: evaluationTitle,
+                      finished: !evalTitleLoading,
+                    ),
+                    TextOrLoading(
+                      text: evaluationText,
+                      finished: !evalTextLoading,
+                    ),
+                  ],
                 ),
             ],
           ),

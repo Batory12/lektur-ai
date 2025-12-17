@@ -16,10 +16,12 @@ class ReadingQuestionsScreen extends StatelessWidget {
     return CommonScaffold(
       title: "Zadanie z matury",
       showDrawer: true,
-      body: QuestionAnswerContainer(
-        isMatura: false,
-        readingName: readingName,
-        toChapter: toChapter,
+      body: SingleChildScrollView(
+        child: QuestionAnswerContainer(
+          isMatura: false,
+          readingName: readingName,
+          toChapter: toChapter,
+        ),
       ),
     );
   }
