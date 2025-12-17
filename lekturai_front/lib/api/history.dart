@@ -43,7 +43,7 @@ class HistoryApi {
     required int to,
   }) async {
     final url = Uri.parse(
-      "${ApiConfig.urlFor(ApiConfig.readingsHistoryEndpoint)}/?user_id=user_name&sort_by=$sortBy&from_=$from&to=$to",
+      "${ApiConfig.urlFor(ApiConfig.readingsHistoryEndpoint)}/?user_id=$uid&sort_by=$sortBy&from_=$from&to=$to",
     );
     final headers = {'Content-Type': 'application/json'};
 
