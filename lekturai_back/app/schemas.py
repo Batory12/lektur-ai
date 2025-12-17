@@ -49,6 +49,7 @@ class User(BaseModel):
     updatedAt: datetime
     id: Optional[str] = Field(None, alias="doc_id")
 
+
 # --- STATS ---
 class UserAllTimeStats(BaseModel):
     current_streak: int
@@ -58,9 +59,11 @@ class UserAllTimeStats(BaseModel):
     points: int
     id: Optional[str] = Field(None, alias="doc_id")
 
+
 class AvgScores(BaseModel):
     avg_points: float
     avg_streak: float
+
 
 # --- Exercises (Lektury) ---
 class ReadingExerciseGen(BaseModel):
@@ -81,43 +84,25 @@ class GradeResponse(BaseModel):
 
 # --- Exercises (Matura) ---
 class MaturaExercise(BaseModel):
-    excercise_id: int
+    excercise_id: str
     excercise_title: str
     excercise_text: str
+    max_points: int
+    texts: list[dict] = []
 
 
 class MaturaSubmit(BaseModel):
     user_answer: str
 
 
-class MaturaGradeResponse(GradeResponse):
-    excercise_id: int
+class MaturaGradeResponse(BaseModel):
+    excercise_id: str
     user_answer: str
+    grade: float
+    feedback: str
     answer_key: str
-
-
-# --- Exercises (Matura from DB) ---
-class MaturaDbExercise(BaseModel):
-    exam_id: str
-    question_number: int
-    excercise_title: str
-    excercise_text: str
     max_points: int
-    texts: list[dict]  # pełne teksty egzaminacyjne dla danego arkusza
 
-
-class MaturaDbSubmit(BaseModel):
-    exam_id: str
-    question_number: int
-    user_answer: str
-
-
-class MaturaDbGradeResponse(GradeResponse):
-    exam_id: str
-    question_number: int
-    max_points: int
-    user_answer: str
-    answer_key: str
 
 # --- Schools ---
 class City(BaseModel):
