@@ -101,7 +101,7 @@ class MaturaGradeResponse(BaseModel):
     grade: float
     feedback: str
     answer_key: str
-    max_points: int
+#    max_points: int
 
 
 # --- Schools ---

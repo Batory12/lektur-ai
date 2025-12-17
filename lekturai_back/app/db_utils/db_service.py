@@ -607,30 +607,36 @@ class FirestoreManager:
     def save_readings_to_history(
         self, user_id: str, submission: ReadingExerciseSubmit, points: int, eval: str
     ):
-        new_data: UserHistoryEntry = {}
-        new_data["date"] = datetime.now(timezone.utc)
-        new_data["eval"] = eval
-        new_data["points"] = points
-        new_data["question"] = submission.excercise_text
-        new_data["response"] = submission.user_answer
-        new_data["type"] = "reading"
-
-        self.add_history_entry(user_id, new_data)
-        return None
+        raw_data = {}
+        raw_data["date"] = datetime.now(timezone.utc)
+        raw_data["eval"] = eval
+        raw_data["points"] = points
+        raw_data["question"] = submission.excercise_text
+        raw_data["response"] = submission.user_answer
+        raw_data["type"] = "reading"
+        try:
+            new_data = UserHistoryEntry(**raw_data)
+            self.add_history_entry(user_id, new_data)
+            return None
+        except Exception as e:
+            print(f"Error while creating UserHistoryEntry: {e}")
 
     def save_matura_ex_to_history(
-        self, user_id: str, submission: MaturaGradeResponse, points: int, eval: str
+        self, user_id: str, question: str, answer: str, points: int, eval: str
     ):
-        new_data: UserHistoryEntry = {}
-        new_data["date"] = datetime.now(timezone.utc)
-        new_data["eval"] = eval
-        new_data["points"] = points
-        new_data["question"] = self.get_question_text_by_id(submission.excercise_id)
-        new_data["response"] = submission.user_answer
-        new_data["type"] = "reading"
-
-        self.add_history_entry(user_id, new_data)
-        return None
+        raw_data = {}
+        raw_data["date"] = datetime.now(timezone.utc)
+        raw_data["eval"] = eval
+        raw_data["points"] = points
+        raw_data["question"] = question
+        raw_data["response"] = answer
+        raw_data["type"] = "reading"
+        try:
+            new_data = UserHistoryEntry(**raw_data)
+            self.add_history_entry(user_id, new_data)
+            return None
+        except Exception as e:
+            print(f"Error while creating UserHistoryEntry: {e}")
 
     # 🔍 Get History Entries (Read)
     def get_history_by_range(

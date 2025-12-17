@@ -1,7 +1,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-
+from app.db_utils import db_manager
 from app.schemas import ContextRequest, FoundContext
 from app.services.ai_service import AIService, get_ai_service
 
@@ -10,7 +10,7 @@ router = APIRouter(tags=["Search & Assistant"])
 
 @router.post("/find_contexts", response_model=List[FoundContext])
 def find_contexts(
-    data: ContextRequest, ai_service: AIService = Depends(get_ai_service)
+    data: ContextRequest, user_id: str, ai_service: AIService = Depends(get_ai_service)
 ) -> List[FoundContext]:
     """
     Generuje listę kontekstów do rozprawki na podstawie tytułu i preferencji użytkownika.
@@ -70,7 +70,9 @@ def find_contexts(
         except Exception as e:
             print(f"Skipping malformed context item: {item} | Error: {e}")
             continue
-
+    
+    # prolonging the learning streak but not granting points
+    db_manager.update_stats_after_ex(user_id, 0)
     if not results:
         raise HTTPException(
             status_code=500,
