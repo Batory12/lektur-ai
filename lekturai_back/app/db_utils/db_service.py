@@ -480,6 +480,7 @@ class FirestoreManager:
                         1970, 1, 1, tzinfo=timezone.utc
                     ),  # Very old date as default
                     total_tasks_done=0,
+                    points=0
                 )
                 self.add_user_stats(new_stats, user_id)
                 return new_stats
