@@ -10,7 +10,8 @@ dependencies = [
     "firebase-admin",
     "python-dotenv",
     "google-genai>=1.55.0",
-    "python-dotenv>=1.2.1"
+    "python-dotenv>=1.2.1",
+    "tenacity>=9.1.2",
 ]
 
 [dependency-groups]
