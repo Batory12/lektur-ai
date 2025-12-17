@@ -93,6 +93,29 @@ class MaturaGradeResponse(GradeResponse):
     answer_key: str
 
 
+# --- Exercises (Matura from DB) ---
+class MaturaDbExercise(BaseModel):
+    exam_id: str
+    question_number: int
+    excercise_title: str
+    excercise_text: str
+    max_points: int
+    texts: list[dict]  # pełne teksty egzaminacyjne dla danego arkusza
+
+
+class MaturaDbSubmit(BaseModel):
+    exam_id: str
+    question_number: int
+    user_answer: str
+
+
+class MaturaDbGradeResponse(GradeResponse):
+    exam_id: str
+    question_number: int
+    max_points: int
+    user_answer: str
+    answer_key: str
+
 # --- Schools ---
 class City(BaseModel):
     name: str
