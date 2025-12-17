@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lekturai_front/api/exercise.dart';
+import 'package:lekturai_front/services/profile_service.dart';
 import 'package:lekturai_front/theme/colors.dart';
 import 'package:lekturai_front/theme/text_styles.dart';
 import 'package:lekturai_front/widgets/qa_card.dart';
@@ -50,7 +51,8 @@ class QAState extends State<QuestionAnswerContainer> {
   bool questionTextLoading = true;
   bool evalTextLoading = true;
   ExerciseApi api = ExerciseApi();
-  int? questionId;
+  String? questionId;
+  String? uid;
 
   //This is bad, I'll refactor it in fabled "Sometime Later"
   String? readingName;
@@ -85,7 +87,7 @@ class QAState extends State<QuestionAnswerContainer> {
     });
     if (isMatura) {
       final submit = MaturaSubmit(answer: newAnswer, id: questionId!);
-      final grade = await api.submitMaturaExercise(submit);
+      final grade = await api.submitMaturaExercise(submit, uid!);
       setState(() {
         evaluationText = grade.feedback;
         evaluationTitle = "Ocena: ${grade.grade}";
@@ -98,7 +100,7 @@ class QAState extends State<QuestionAnswerContainer> {
         text: questionText!,
         title: questionTitle!,
       );
-      final grade = await api.submitReadingExercise(submit);
+      final grade = await api.submitReadingExercise(submit, uid!);
       setState(() {
         evaluationText = grade.feedback;
         evaluationTitle = "Ocena: ${grade.grade}";
@@ -122,6 +124,10 @@ class QAState extends State<QuestionAnswerContainer> {
     isMatura = widget.isMatura;
     readingName = widget.readingName;
     toChapter = widget.toChapter;
+    uid = ProfileService().currentUser?.uid;
+    if (uid == null) {
+      throw Exception("user id is null");
+    }
     super.initState();
     if (questionText == null) {
       loadQuestion();

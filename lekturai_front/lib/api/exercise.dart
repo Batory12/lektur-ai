@@ -11,7 +11,7 @@ abstract class Exercise {
 }
 
 class MaturaExercise extends Exercise {
-  final int id;
+  final String id;
 
   MaturaExercise({required this.id, required super.text, required super.title});
 
@@ -75,15 +75,14 @@ class ReadingExerciseSubmit {
   }
 }
 
-//TODO possibly broken? may need to delete id but this seems more natural for now
 class MaturaSubmit {
-  final int id;
+  final String id;
   final String answer;
 
   MaturaSubmit({required this.id, required this.answer});
 
   Map<String, dynamic> toJson() {
-    return {/*'excercise_id': id,*/ 'user_answer': answer};
+    return {'excercise_id': id, 'user_answer': answer};
   }
 }
 
@@ -106,7 +105,7 @@ class ReadingGradeResponse {
 }
 
 class MaturaGradeResponse {
-  final int exerciseId;
+  final String exerciseId;
   final double grade;
   final String feedback;
 
@@ -154,9 +153,14 @@ class ExerciseApi {
     }
   }
 
-  Future<MaturaGradeResponse> submitMaturaExercise(MaturaSubmit answer) async {
+  Future<MaturaGradeResponse> submitMaturaExercise(
+    MaturaSubmit answer,
+    String uid,
+  ) async {
     final url = Uri.parse(
-      ApiConfig.urlFor("${ApiConfig.maturaExcerciseEndpoint}/${answer.id}"),
+      ApiConfig.urlFor(
+        "${ApiConfig.maturaExcerciseEndpoint}/${answer.id}?user_id=$uid",
+      ),
     );
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode(answer.toJson());
@@ -214,8 +218,11 @@ class ExerciseApi {
 
   Future<ReadingGradeResponse> submitReadingExercise(
     ReadingExerciseSubmit answer,
+    String uid,
   ) async {
-    final url = Uri.parse(ApiConfig.urlFor(ApiConfig.readingExcerciseEndpoint));
+    final url = Uri.parse(
+      ApiConfig.urlFor("${ApiConfig.readingExcerciseEndpoint}?user_id=$uid"),
+    );
     final headers = {'Content-Type': 'application/json'};
     final body = jsonEncode(answer.toJson());
 

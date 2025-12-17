@@ -50,6 +50,7 @@ class User(BaseModel):
     id: Optional[str] = Field(None, alias="doc_id")
 
 
+# --- STATS ---
 class UserAllTimeStats(BaseModel):
     current_streak: int
     longest_streak: int
@@ -57,6 +58,11 @@ class UserAllTimeStats(BaseModel):
     total_tasks_done: int
     points: int
     id: Optional[str] = Field(None, alias="doc_id")
+
+
+class AvgScores(BaseModel):
+    avg_points: float
+    avg_streak: float
 
 
 # --- Exercises (Lektury) ---
@@ -78,19 +84,24 @@ class GradeResponse(BaseModel):
 
 # --- Exercises (Matura) ---
 class MaturaExercise(BaseModel):
-    excercise_id: int
+    excercise_id: str
     excercise_title: str
     excercise_text: str
+    max_points: int
+    texts: list[dict] = []
 
 
 class MaturaSubmit(BaseModel):
     user_answer: str
 
 
-class MaturaGradeResponse(GradeResponse):
-    excercise_id: int
+class MaturaGradeResponse(BaseModel):
+    excercise_id: str
     user_answer: str
+    grade: float
+    feedback: str
     answer_key: str
+#    max_points: int
 
 
 # --- Schools ---

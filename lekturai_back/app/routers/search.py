@@ -1,8 +1,8 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-
-from app.schemas import ContextRequest, FoundContext, ReadingChapterInfo
+from app.db_utils import db_manager
+from app.schemas import ContextRequest, FoundContext
 from app.services.ai_service import AIService, get_ai_service
 
 router = APIRouter(tags=["Search & Assistant"])
@@ -10,7 +10,7 @@ router = APIRouter(tags=["Search & Assistant"])
 
 @router.post("/find_contexts", response_model=List[FoundContext])
 def find_contexts(
-    data: ContextRequest, ai_service: AIService = Depends(get_ai_service)
+    data: ContextRequest, user_id: str, ai_service: AIService = Depends(get_ai_service)
 ) -> List[FoundContext]:
     """
     Generuje listę kontekstów do rozprawki na podstawie tytułu i preferencji użytkownika.
@@ -70,7 +70,9 @@ def find_contexts(
         except Exception as e:
             print(f"Skipping malformed context item: {item} | Error: {e}")
             continue
-
+    
+    # prolonging the learning streak but not granting points
+    db_manager.update_stats_after_ex(user_id, 0)
     if not results:
         raise HTTPException(
             status_code=500,
@@ -78,30 +80,3 @@ def find_contexts(
         )
 
     return results
-
-
-# --- Remaining endpoints (stubs or simple logic) ---
-
-
-@router.get("/autocomplete_reading", response_model=List[str])
-def autocomplete_reading(name_so_far: str | None = "") -> List[str]:
-    # In a real app, this would query a database
-    all_readings = [
-        "Lalka",
-        "Ludzie Bezdomni",
-        "Pan Tadeusz",
-        "Dziady cz. III",
-        "Kordian",
-        "Ferdydurke",
-    ]
-    if not name_so_far:
-        return all_readings[:5]
-
-    return [r for r in all_readings if name_so_far.lower() in r.lower()]
-
-
-@router.get("/{reading_name}/chapters", response_model=ReadingChapterInfo)
-def get_chapters_count(reading_name: str) -> ReadingChapterInfo:
-    # Logic to return chapter count based on reading name
-    # Placeholder logic:
-    return ReadingChapterInfo(n_chapters=12)

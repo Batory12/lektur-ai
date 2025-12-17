@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lekturai_front/models/user_stats.dart';
+import '../models/user_profile.dart';
 
 class ProfileService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -25,6 +27,26 @@ class ProfileService {
       return null;
     } catch (e) {
       print('Błąd podczas pobierania profilu: $e');
+      return null;
+    }
+  }
+
+  Future<UserStats?> getUserStats() async {
+    if (currentUser == null) return null;
+
+    try {
+      DocumentSnapshot doc = await _firestore
+          .collection('user-all-time-stats')
+          .doc(currentUser!.uid)
+          .get();
+
+      if (doc.exists) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return UserStats.fromJson(data);
+      }
+      return null;
+    } catch (e) {
+      print('Błąd podczas pobierania statystyk użytkownika: $e');
       return null;
     }
   }
@@ -186,68 +208,6 @@ class ProfileService {
     });
   }
 }
-
-// User profile model
-class UserProfile {
-  final String uid;
-  final String email;
-  final String displayName;
-  final int balance;
-  final String? city;
-  final String? school;
-  final String? className;
-  final String? notificationFrequency;
-  final DateTime? createdAt;
-  final DateTime? lastLoginAt;
-  final DateTime? updatedAt;
-
-  UserProfile({
-    required this.uid,
-    required this.email,
-    required this.displayName,
-    this.balance = 0,
-    this.city,
-    this.school,
-    this.className,
-    this.notificationFrequency,
-    this.createdAt,
-    this.lastLoginAt,
-    this.updatedAt,
-  });
-
-  factory UserProfile.fromMap(Map<String, dynamic> map) {
-    return UserProfile(
-      uid: map['uid'] ?? '',
-      email: map['email'] ?? '',
-      displayName: map['displayName'] ?? '',
-      balance: map['balance'] ?? 0,
-      city: map['city'],
-      school: map['school'],
-      className: map['className'],
-      notificationFrequency: map['notificationFrequency'] ?? 'Codziennie',
-      createdAt: map['createdAt']?.toDate(),
-      lastLoginAt: map['lastLoginAt']?.toDate(),
-      updatedAt: map['updatedAt']?.toDate(),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'uid': uid,
-      'email': email,
-      'displayName': displayName,
-      'balance': balance,
-      'city': city,
-      'school': school,
-      'className': className,
-      'notificationFrequency': notificationFrequency,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
-      'lastLoginAt': lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
-      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
-    };
-  }
-}
-
 // Result class for profile operations
 class ProfileUpdateResult {
   final bool success;

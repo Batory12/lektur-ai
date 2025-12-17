@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+import random
+
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.db_utils import db_manager
 from app.schemas import (
@@ -12,6 +14,8 @@ from app.schemas import (
 
 # Import the service and dependency
 from app.services.ai_service import AIService, get_ai_service
+
+from ..db_utils import db_manager
 
 router = APIRouter(tags=["Exercises"])
 
@@ -54,11 +58,11 @@ def generate_reading_exercise(
 
 @router.post("/reading_ex", response_model=GradeResponse)
 def grade_reading_exercise(
-    submission: ReadingExerciseSubmit, ai_service: AIService = Depends(get_ai_service)
+    submission: ReadingExerciseSubmit,
+    user_id: str,
+    ai_service: AIService = Depends(get_ai_service),
 ) -> GradeResponse:
     """Ocenia zadanie z lektury przy użyciu Gemini."""
-    # TODO: trzeba skads wziac userid
-    db_manager.update_stats_after_ex("user_name", 10)
 
     # Krok 1: Przygotowanie Prompta do Oceny (Twoja oryginalna treść)
     prompt = (
@@ -75,8 +79,12 @@ def grade_reading_exercise(
     ai_response = ai_service.generate_content(prompt)
 
     # Krok 3: Parsowanie odpowiedzi
+    # TODO:: USTALIĆ JAK KONWERTOWAĆ GRADE NA POINTS!!!!!
+    # Czy grade może być int?
     try:
         grade_str, feedback = ai_response.split("#GRADE_SEP#", 1)
+        db_manager.update_stats_after_ex(user_id, 2)
+        db_manager.save_readings_to_history(user_id, submission, 2, feedback.strip())
         return GradeResponse(grade=float(grade_str.strip()), feedback=feedback.strip())
     except (ValueError, IndexError):
         return GradeResponse(
@@ -89,37 +97,139 @@ def grade_reading_exercise(
 
 @router.get("/matura_ex", response_model=MaturaExercise)
 def get_random_matura_task() -> MaturaExercise:
-    # Ten endpoint nie wymaga AI Service
+    exam = None
+    try:
+        # Pobierz pierwszy dostępny egzamin (lub losowy z puli)
+        exams_query = db_manager.db.collection(db_manager.EXAMS_COLLECTION).limit(5)
+        docs = list(exams_query.stream())
+        if not docs:
+            raise HTTPException(status_code=404, detail="Brak egzaminów w bazie.")
+
+        # Losujemy jeden dokument
+        doc = random.choice(docs)
+        exam = db_manager.get_exam(doc.id)
+        if not exam:
+            raise HTTPException(
+                status_code=404, detail="Nie udało się odczytać egzaminu z bazy."
+            )
+    except Exception as e:
+        print(f"Błąd pobierania egzaminu z Firestore: {e}")
+        raise HTTPException(
+            status_code=500, detail="Błąd serwera podczas pobierania egzaminu."
+        )
+
+    questions = db_manager.get_exam_questions(exam.id) if exam and exam.id else []
+    if not questions:
+        raise HTTPException(status_code=404, detail="Brak zadań dla tego egzaminu.")
+
+    question = random.choice(questions)
+
+    # Znormalizuj teksty: jeśli z ekstraktora przychodzą w stronach, łączymy strony w jeden ciąg
+    raw_texts = exam.texts or []
+    normalized_texts: list[dict] = []
+    for t in raw_texts:
+        if isinstance(t, dict) and "pages" in t:
+            pages = t.get("pages") or []
+            full_text_parts = [
+                p.get("text") for p in pages if isinstance(p, dict) and p.get("text")
+            ]
+            full_text = "\n\n".join(full_text_parts)
+
+            normalized_texts.append(
+                {
+                    "number": t.get("number"),
+                    "author": t.get("author"),
+                    "title": t.get("title"),
+                    "text": full_text,
+                }
+            )
+        else:
+            normalized_texts.append(t)
+
+    # Tworzymy composite ID: EXAM_ID:QUESTION_NUMBER
+    composite_id = f"{exam.id}:{question.number}"
+
     return MaturaExercise(
-        excercise_id=101,
-        excercise_title="Rozprawka",
-        excercise_text="Czy praca uszlachetnia? Rozważ na podstawie Lalki.",
+        excercise_id=composite_id,
+        excercise_title=f"Zadanie {question.number}",
+        excercise_text=question.text,
+        max_points=question.max_points,
+        texts=normalized_texts,
     )
 
 
 @router.post("/matura_ex/{excercise_id}", response_model=MaturaGradeResponse)
 def solve_matura_task(
-    excercise_id: int,
+    excercise_id: str,
     submission: MaturaSubmit,
+    user_id: str,
     ai_service: AIService = Depends(get_ai_service),
 ) -> MaturaGradeResponse:
     """Ocenia zadanie maturalne przy użyciu Gemini."""
-    # TODO: trzeba skaads wziac id usera
-    db_manager.update_stats_after_ex("user_name", 10)
 
-    # Krok 1: Przygotowanie Prompta (Twoja oryginalna treść)
+    # Parsowanie ID (ExamID:QuestionNumber)
+    try:
+        exam_id, q_num_str = excercise_id.split(":", 1)
+        question_number = int(q_num_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Nieprawidłowe ID zadania.")
+
+    # Pobieranie danych z bazy
+    exam = db_manager.get_exam(exam_id)
+    if not exam:
+        raise HTTPException(status_code=404, detail="Egzamin nie istnieje.")
+
+    questions = db_manager.get_exam_questions(exam_id)
+    question = next((q for q in questions if q.number == question_number), None)
+
+    answers_map = db_manager.get_exam_answers(exam_id)
+    answer = answers_map.get(question_number)
+
+    if not question or not answer:
+        raise HTTPException(status_code=404, detail="Brak danych zadania w bazie.")
+
+    # Budowanie kontekstu tekstów
+    texts = exam.texts or []
+    texts_str_parts = []
+    for t in texts:
+        number = t.get("number")
+        author = t.get("author")
+        title = t.get("title")
+        # Obsługa paginacji w locie dla prompta
+        if "pages" in t:
+            text_body = "\n".join([p.get("text", "") for p in t.get("pages", [])])
+        else:
+            text_body = t.get("text", "")
+
+        header = (
+            f"[TEKST {number}] {author}: {title}"
+            if number is not None
+            else f"[TEKST] {author}: {title}"
+        )
+        texts_str_parts.append(f"{header}\n{text_body}\n")
+
+    texts_str = (
+        "\n\n".join(texts_str_parts) if texts_str_parts else "Brak tekstów źródłowych."
+    )
+
+    # Krok 1: Przygotowanie Prompta
     system_prompt = (
         "Jesteś rygorystycznym egzaminatorem maturalnym. Twoim celem jest ocena, feedback "
-        "oraz podanie wzorcowej tezy/klucza odpowiedzi, ale w sekcjach wydzielonych separatorami."
+        "oraz podanie wzorcowej tezy/klucza odpowiedzi, ale w sekcjach wydzielonych separatorami. "
+        "Oceniasz na podstawie oficjalnego klucza i tekstów źródłowych."
     )
 
     prompt = (
-        "Oceń i przeanalizuj poniższą odpowiedź maturalną. "
-        f"Zadanie: 'Czy praca uszlachetnia? Rozważ na podstawie Lalki.'\n"
+        "Oceń i przeanalizuj poniższą odpowiedź maturalną. \n\n"
+        "TEKSTY EGZAMINACYJNE:\n"
+        f"{texts_str}\n\n"
+        f"Zadanie: '{question.text}'\n"
+        f"Oficjalny klucz/kryteria: '{answer.text}'\n"
+        f"Max punktów: {question.max_points}\n\n"
         f"Odpowiedź zdającego: '{submission.user_answer}'\n\n"
-        "1. Oceń w skali 1.0 do 6.0. "
+        "1. Oceń (liczba punktów). Nie przekraczaj max punktów. "
         "2. Wystaw szczegółowy feedback. "
-        "3. Podaj wzorcowy klucz odpowiedzi/tezy.\n\n"
+        "3. Podaj wzorcowy klucz odpowiedzi (przepisz go lub streść).\n\n"
         "FORMAT: [OCENA]#SEP1#[FEEDBACK]#SEP2#[KLUCZ_ODPOWIEDZI]"
     )
 
@@ -130,23 +240,33 @@ def solve_matura_task(
     try:
         # Rozdzielanie po separatorach zdefiniowanych w promptcie
         part1, rest = ai_response.split("#SEP1#", 1)
-        feedback, answer_key = rest.split("#SEP2#", 1)
+        feedback, answer_key_ai = rest.split("#SEP2#", 1)
 
-        grade_str = part1.strip()
+        grade_str = part1.strip().replace(",", ".")
+        # Prosta sanityzacja jeśli AI zwróci np. "2/3"
+        if "/" in grade_str:
+            grade_str = grade_str.split("/")[0]
+
+        grade_val = float(grade_str)
+
+        db_manager.update_stats_after_ex(user_id, int(grade_val))
+        db_manager.save_matura_ex_to_history(
+            user_id, question.text, submission.user_answer, int(grade_val), feedback.strip()
+        )
 
         return MaturaGradeResponse(
             excercise_id=excercise_id,
             user_answer=submission.user_answer,
-            grade=float(grade_str),
+            grade=grade_val,
             feedback=feedback.strip(),
-            answer_key=answer_key.strip(),
+            answer_key=answer.text,  # Zwracamy klucz z bazy (pewniejszy) lub ten z AI (answer_key_ai)
         )
     except (ValueError, IndexError) as e:
         print(f"Błąd parsowania odpowiedzi Matura AI: {e}")
         return MaturaGradeResponse(
             excercise_id=excercise_id,
             user_answer=submission.user_answer,
-            grade=1.0,
-            feedback="Błąd parsowania odpowiedzi AI. Spróbuj ponownie.",
-            answer_key="Brak danych wzorcowych.",
+            grade=0.0,
+            feedback=f"Błąd parsowania odpowiedzi AI: {ai_response}",
+            answer_key=answer.text,
         )

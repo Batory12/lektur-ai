@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:lekturai_front/services/profile_service.dart';
 import 'api_config.dart';
 
 class Context {
@@ -77,8 +78,14 @@ class ContextsResult {
 }
 
 class ContextsApi {
+  final ProfileService profileService = ProfileService();
+
   Future<ContextsResult> getContexts(EssayContextsRequest request) async {
-    final url = Uri.parse(ApiConfig.contextsUrl);
+    final String userId = profileService.currentUser!.uid;
+
+    final url = Uri.parse(ApiConfig.contextsUrl).replace(
+      queryParameters: {'user_id': userId},
+    );
     final headers = {
       'Content-Type': 'application/json',
     };

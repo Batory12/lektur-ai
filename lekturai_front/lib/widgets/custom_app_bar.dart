@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lekturai_front/models/user_stats.dart';
 import 'package:lekturai_front/services/profile_service.dart';
 import 'package:lekturai_front/theme/colors.dart';
 import 'package:lekturai_front/theme/spacing.dart';
 import 'package:lekturai_front/theme/text_styles.dart';
+import '../models/user_profile.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
@@ -26,12 +28,14 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
 class _CustomAppBarState extends State<CustomAppBar> {
   final ProfileService _profileService = ProfileService();
   UserProfile? _userProfile;
+  UserStats? _userStats;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+    _loadUserStats();
   }
 
   Future<void> _loadUserProfile() async {
@@ -49,6 +53,19 @@ class _CustomAppBarState extends State<CustomAppBar> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadUserStats() async {
+    try {
+      UserStats? stats = await _profileService.getUserStats();
+      if (mounted) {
+        setState(() {
+          _userStats = stats;
+        });
+      }
+    } catch (e) {
+      // Handle error if needed
     }
   }
 
@@ -91,7 +108,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Text(
-                  '${_userProfile!.balance}',
+                  '${_userStats?.points ?? 0}',
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.white,
                     fontWeight: FontWeight.bold,
