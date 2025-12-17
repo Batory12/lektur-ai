@@ -2,11 +2,11 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
-class ProfileApi {
+class MockProfileApi {
   final String? baseUrl;
   List<dynamic> _schoolsData = [];
 
-  ProfileApi({this.baseUrl});
+  MockProfileApi({this.baseUrl});
 
   Future<void> loadSchools() async {
     if (_schoolsData.isEmpty) {

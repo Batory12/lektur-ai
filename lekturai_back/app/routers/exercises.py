@@ -1,111 +1,70 @@
-from fastapi import APIRouter, HTTPException, Depends
+import random
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.db_utils import db_manager
 from app.schemas import (
+    GradeResponse,
+    MaturaDbExercise,
+    MaturaDbGradeResponse,
+    MaturaDbSubmit,
+    MaturaExercise,
+    MaturaGradeResponse,
+    MaturaSubmit,
     ReadingExerciseGen,
     ReadingExerciseSubmit,
-    GradeResponse,
-    MaturaExercise,
-    MaturaSubmit,
-    MaturaGradeResponse,
-    MaturaDbExercise,
-    MaturaDbSubmit,
-    MaturaDbGradeResponse,
 )
-
-# --- Importy Gemini ---
-from google import genai
-from google.genai.errors import APIError
-import os
-from typing import List
-from dotenv import load_dotenv
-from app.db_service import FirestoreManager
-import random
-load_dotenv()
-
-# --- Konfiguracja Gemini ---
-try:
-    # Klient odczyta klucz z zmiennej środowiskowej GEMINI_API_KEY
-    ai_client = genai.Client()
-except Exception:
-    # W przypadku braku klucza, ustawiamy klienta na None i obsłużymy błąd później
-    ai_client = None
-    print("OSTRZEŻENIE: Klient Gemini nie został zainicjowany. Upewnij się, że GEMINI_API_KEY jest ustawiony.")
-
+from ..db_utils import db_manager
+# Import the service and dependency
+from app.services.ai_service import AIService, get_ai_service
 
 router = APIRouter(tags=["Exercises"])
 
-# --- Funkcja pomocnicza do komunikacji z Gemini API ---
-def call_gemini_api(prompt: str, system_instruction: str = None) -> str:
-    if not ai_client:
-        raise HTTPException(status_code=503, detail="Usługa AI jest obecnie niedostępna (Brak klucza API).")
-    
-    try:
-        config = {}
-        if system_instruction:
-            config['system_instruction'] = system_instruction
-            
-        response = ai_client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=config
-        )
-        return response.text
-    except APIError as e:
-        print(f"Błąd API Gemini: {e}")
-        raise HTTPException(status_code=500, detail="Błąd podczas komunikacji z modelem AI.")
-    except Exception as e:
-        print(f"Nieznany błąd: {e}")
-        raise HTTPException(status_code=500, detail="Wystąpił nieznany błąd serwera.")
-
-
-# --- Helper: Firestore manager singleton for this router ---
-_firestore_manager: FirestoreManager | None = None
-
-
-def get_firestore_manager() -> FirestoreManager:
-    global _firestore_manager
-    if _firestore_manager is None:
-        _firestore_manager = FirestoreManager()
-    return _firestore_manager
-
-
 # --- Lektury ---
+
+
 @router.get("/reading_ex/{reading_name}", response_model=ReadingExerciseGen)
-def generate_reading_exercise(reading_name: str, to_chapter: int | None = None) -> ReadingExerciseGen:
+def generate_reading_exercise(
+    reading_name: str,
+    to_chapter: int | None = None,
+    ai_service: AIService = Depends(get_ai_service),
+) -> ReadingExerciseGen:
     """Generuje zadanie z lektury przy użyciu Gemini."""
-    
+
     chapter_info = f" do rozdziału {to_chapter}" if to_chapter else ""
-    
-    # Krok 1: Przygotowanie Prompta
+
+    # Krok 1: Przygotowanie Prompta (Twoja oryginalna treść)
     prompt = (
         f"Jesteś nauczycielem polonistą. Wygeneruj jedno, konkretne zadanie otwarte (np. opis, interpretacja, rozprawka) "
         f"na podstawie lektury '{reading_name}'{chapter_info}. Pytanie powinno być sformułowane jako polecenie. "
         f"Nie dodawaj żadnych wstępów ani komentarzy, tylko sam tytuł i treść zadania. "
         f"Tytuł oddziel od treści znakiem '#TITLE_SEP#'."
     )
-    
-    # Krok 2: Wywołanie API
-    ai_response = call_gemini_api(prompt)
-    
+
+    # Krok 2: Wywołanie API przez Service
+    ai_response = ai_service.generate_content(prompt)
+
     # Krok 3: Parsowanie odpowiedzi
     try:
-        title, text = ai_response.split('#TITLE_SEP#', 1)
+        title, text = ai_response.split("#TITLE_SEP#", 1)
         return ReadingExerciseGen(
-            excercise_title=title.strip(),
-            excercise_text=text.strip()
+            excercise_title=title.strip(), excercise_text=text.strip()
         )
     except ValueError:
-        # W przypadku, gdy model nie zwróci separatora (awaria), zwracamy standardowy błąd
         return ReadingExerciseGen(
             excercise_title=f"Awaryjne Zadanie z: {reading_name}",
-            excercise_text="Opisz zachowanie bohatera w rozdziale... (Błąd generowania AI)"
+            excercise_text="Opisz zachowanie bohatera w rozdziale... (Błąd generowania AI)",
         )
 
 
 @router.post("/reading_ex", response_model=GradeResponse)
-def grade_reading_exercise(submission: ReadingExerciseSubmit) -> GradeResponse:
+def grade_reading_exercise(
+    submission: ReadingExerciseSubmit, ai_service: AIService = Depends(get_ai_service)
+) -> GradeResponse:
     """Ocenia zadanie z lektury przy użyciu Gemini."""
+    # TODO: trzeba skads wziac userid
+    db_manager.update_stats_after_ex("user_name", 10)
 
-    # Krok 1: Przygotowanie Prompta do Oceny
+    # Krok 1: Przygotowanie Prompta do Oceny (Twoja oryginalna treść)
     prompt = (
         "Jesteś ekspertem oceniającym prace szkolne. Twoja rola to ocena i szczegółowy feedback. "
         f"Zadanie: '{submission.excercise_text}'\n"
@@ -116,41 +75,48 @@ def grade_reading_exercise(submission: ReadingExerciseSubmit) -> GradeResponse:
         "2. Szczegółowy feedback dla ucznia (co było dobre, co wymaga poprawy, z konkretnymi wskazówkami)."
     )
 
-    # Krok 2: Wywołanie API
-    ai_response = call_gemini_api(prompt)
-    
+    # Krok 2: Wywołanie API przez Service
+    ai_response = ai_service.generate_content(prompt)
+
     # Krok 3: Parsowanie odpowiedzi
     try:
-        grade_str, feedback = ai_response.split('#GRADE_SEP#', 1)
-        return GradeResponse(
-            grade=float(grade_str.strip()),
-            feedback=feedback.strip()
-        )
+        grade_str, feedback = ai_response.split("#GRADE_SEP#", 1)
+        return GradeResponse(grade=float(grade_str.strip()), feedback=feedback.strip())
     except (ValueError, IndexError):
-        return GradeResponse(grade=3.0, feedback="Błąd parsowania odpowiedzi AI. Spróbuj ponownie.")
+        return GradeResponse(
+            grade=3.0, feedback="Błąd parsowania odpowiedzi AI. Spróbuj ponownie."
+        )
 
 
-# --- Matura (statyczna wersja, bez bazy) ---
+# --- Matura ---
+
+
 @router.get("/matura_ex", response_model=MaturaExercise)
 def get_random_matura_task() -> MaturaExercise:
-    # Można by użyć AI do generowania treści, ale na razie używamy prostego szablonu
+    # Ten endpoint nie wymaga AI Service
     return MaturaExercise(
         excercise_id=101,
         excercise_title="Rozprawka",
-        excercise_text="Czy praca uszlachetnia? Rozważ na podstawie Lalki."
+        excercise_text="Czy praca uszlachetnia? Rozważ na podstawie Lalki.",
     )
 
-@router.post("/matura_ex/{excercise_id}", response_model=MaturaGradeResponse)
-def solve_matura_task(excercise_id: int, submission: MaturaSubmit) -> MaturaGradeResponse:
-    """Ocenia zadanie maturalne przy użyciu Gemini."""
 
-    # Krok 1: Przygotowanie Prompta do Oceny Maturalnej
-    # Używamy system_instruction, aby ustawić rolę modelu AI
+@router.post("/matura_ex/{excercise_id}", response_model=MaturaGradeResponse)
+def solve_matura_task(
+    excercise_id: int,
+    submission: MaturaSubmit,
+    ai_service: AIService = Depends(get_ai_service),
+) -> MaturaGradeResponse:
+    """Ocenia zadanie maturalne przy użyciu Gemini."""
+    # TODO: trzeba skaads wziac id usera
+    db_manager.update_stats_after_ex("user_name", 10)
+
+    # Krok 1: Przygotowanie Prompta (Twoja oryginalna treść)
     system_prompt = (
         "Jesteś rygorystycznym egzaminatorem maturalnym. Twoim celem jest ocena, feedback "
         "oraz podanie wzorcowej tezy/klucza odpowiedzi, ale w sekcjach wydzielonych separatorami."
     )
-    
+
     prompt = (
         "Oceń i przeanalizuj poniższą odpowiedź maturalną. "
         f"Zadanie: 'Czy praca uszlachetnia? Rozważ na podstawie Lalki.'\n"
@@ -160,23 +126,24 @@ def solve_matura_task(excercise_id: int, submission: MaturaSubmit) -> MaturaGrad
         "3. Podaj wzorcowy klucz odpowiedzi/tezy.\n\n"
         "FORMAT: [OCENA]#SEP1#[FEEDBACK]#SEP2#[KLUCZ_ODPOWIEDZI]"
     )
-    
-    # Krok 2: Wywołanie API
-    ai_response = call_gemini_api(prompt, system_instruction=system_prompt)
-    
+
+    # Krok 2: Wywołanie API przez Service
+    ai_response = ai_service.generate_content(prompt, system_instruction=system_prompt)
+
     # Krok 3: Parsowanie odpowiedzi
     try:
-        parts = ai_response.split('#SEP')
-        grade_str = parts[0].strip()
-        feedback = parts[1].strip().lstrip('123') # Usuwamy ew. wiodące cyfry
-        answer_key = parts[2].strip().lstrip('123') # Usuwamy ew. wiodące cyfry
-        
+        # Rozdzielanie po separatorach zdefiniowanych w promptcie
+        part1, rest = ai_response.split("#SEP1#", 1)
+        feedback, answer_key = rest.split("#SEP2#", 1)
+
+        grade_str = part1.strip()
+
         return MaturaGradeResponse(
             excercise_id=excercise_id,
             user_answer=submission.user_answer,
             grade=float(grade_str),
-            feedback=feedback,
-            answer_key=answer_key
+            feedback=feedback.strip(),
+            answer_key=answer_key.strip(),
         )
     except (ValueError, IndexError) as e:
         print(f"Błąd parsowania odpowiedzi Matura AI: {e}")
@@ -185,9 +152,8 @@ def solve_matura_task(excercise_id: int, submission: MaturaSubmit) -> MaturaGrad
             user_answer=submission.user_answer,
             grade=1.0,
             feedback="Błąd parsowania odpowiedzi AI. Spróbuj ponownie.",
-            answer_key="Brak danych wzorcowych."
+            answer_key="Brak danych wzorcowych.",
         )
-
 
 # --- Matura z bazy (Firestore) ---
 @router.get("/matura_db/random", response_model=MaturaDbExercise)
@@ -197,16 +163,16 @@ def get_random_matura_db_task() -> MaturaDbExercise:
     - losujemy egzamin (na razie: pierwszy znaleziony)
     - losujemy jedno zadanie (Question) z tego egzaminu
     """
-    manager = get_firestore_manager()
+
     exam = None
     try:
         # Pobierz pierwszy dostępny egzamin
-        exams_query = manager.db.collection(manager.EXAMS_COLLECTION).limit(1)
+        exams_query = db_manager.db.collection(db_manager.EXAMS_COLLECTION).limit(1)
         docs = list(exams_query.stream())
         if not docs:
             raise HTTPException(status_code=404, detail="Brak egzaminów w bazie.")
         doc = docs[0]
-        exam = manager.get_exam(doc.id)
+        exam = db_manager.get_exam(doc.id)
         if not exam:
             raise HTTPException(status_code=404, detail="Nie udało się odczytać egzaminu z bazy.")
     except HTTPException:
@@ -215,7 +181,7 @@ def get_random_matura_db_task() -> MaturaDbExercise:
         print(f"Błąd pobierania egzaminu z Firestore: {e}")
         raise HTTPException(status_code=500, detail="Błąd serwera podczas pobierania egzaminu.")
 
-    questions = manager.get_exam_questions(exam.id) if exam and exam.id else []
+    questions = db_manager.get_exam_questions(exam.id) if exam and exam.id else []
     if not questions:
         raise HTTPException(status_code=404, detail="Brak zadań dla tego egzaminu.")
 
@@ -223,7 +189,7 @@ def get_random_matura_db_task() -> MaturaDbExercise:
 
     # Znormalizuj teksty: jeśli z ekstraktora przychodzą w stronach, łączymy strony w jeden ciąg
     raw_texts = exam.texts or []
-    normalized_texts: List[dict] = []
+    normalized_texts: list[dict] = []
     for t in raw_texts:
         # przykładowa struktura z paginacją: {"number": 1, "author": "...", "title": "...", "pages": [{"page": 1, "text": "..."}, ...]}
         if isinstance(t, dict) and "pages" in t:
@@ -258,33 +224,32 @@ def get_random_matura_db_task() -> MaturaDbExercise:
 
 
 @router.post("/matura_db/grade", response_model=MaturaDbGradeResponse)
-def grade_matura_db_task(payload: MaturaDbSubmit) -> MaturaDbGradeResponse:
+def grade_matura_db_task(payload: MaturaDbSubmit, ai_service: AIService = Depends(get_ai_service)) -> MaturaDbGradeResponse:
     """
     Ocenia zadanie maturalne na podstawie danych z bazy:
     - pobiera egzamin (teksty) i klucz oceniania do konkretnego zadania
     - przekazuje je jako kontekst do modelu Gemini
     """
-    manager = get_firestore_manager()
 
     # 1. Pobierz egzamin (teksty) i pytania
-    exam = manager.get_exam(payload.exam_id)
+    exam = db_manager.get_exam(payload.exam_id)
     if not exam:
         raise HTTPException(status_code=404, detail="Egzamin o podanym ID nie istnieje.")
 
-    questions = manager.get_exam_questions(payload.exam_id)
+    questions = db_manager.get_exam_questions(payload.exam_id)
     question = next((q for q in questions if q.number == payload.question_number), None)
     if not question:
         raise HTTPException(status_code=404, detail="Zadanie o podanym numerze nie istnieje dla tego egzaminu.")
 
     # 2. Pobierz klucz odpowiedzi dla danego zadania
-    answers_by_number = manager.get_exam_answers(payload.exam_id)
+    answers_by_number = db_manager.get_exam_answers(payload.exam_id)
     answer = answers_by_number.get(payload.question_number)
     if not answer:
         raise HTTPException(status_code=404, detail="Brak klucza odpowiedzi dla tego zadania.")
 
     # 3. Zbuduj kontekst z tekstów egzaminu
     texts = exam.texts or []
-    texts_str_parts: List[str] = []
+    texts_str_parts: list[str] = []
     for t in texts:
         number = t.get("number")
         author = t.get("author")
@@ -319,7 +284,7 @@ def grade_matura_db_task(payload: MaturaDbSubmit) -> MaturaDbGradeResponse:
         "2) szczegółowy feedback dla zdającego, odwołujący się do klucza i tekstów.\n"
     )
 
-    ai_response = call_gemini_api(prompt, system_instruction=system_prompt)
+    ai_response = ai_service.generate_content(prompt, system_instruction=system_prompt)
 
     try:
         grade_str, feedback = ai_response.split("#GRADE_SEP#", 1)

@@ -13,13 +13,14 @@ class TextOrLoading extends StatelessWidget {
         style: Theme.of(context).textTheme.bodyMedium,
         text: text ?? "",
         children: [
-          WidgetSpan(
-            child: SizedBox(
-              width: 16.0,
-              height: 16.0,
-              child: CircularProgressIndicator(),
+          if (!finished)
+            WidgetSpan(
+              child: SizedBox(
+                width: 16.0,
+                height: 16.0,
+                child: CircularProgressIndicator(),
+              ),
             ),
-          ),
         ],
       ),
     );

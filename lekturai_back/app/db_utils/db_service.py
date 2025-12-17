@@ -5,38 +5,13 @@ from firebase_admin import credentials, firestore
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone 
+import os
+from datetime import datetime, timedelta, timezone
+from app.schemas import User, UserAllTimeStats, UserHistoryEntry, School
+from dotenv import load_dotenv
+from app.exam_schemas import Exam as ExamSchema, Question as QuestionSchema, Answer as AnswerSchema, ExamQuestionLink
 
-class User(BaseModel):
-    city: str
-    className: str
-    createdAt: datetime
-    displayName: str
-    email: str
-    lastLoginAt: datetime
-    notificationFrequency: str
-    school: str
-    updatedAt: datetime
-    id: Optional[str] = Field(None, alias='doc_id')
-
-class UserHistoryEntry(BaseModel):
-    type: str
-    prompt: str
-    response: str
-    # Default value set to now 
-    date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    
-class UserAllTimeStats(BaseModel):
-    current_streak: int
-    longest_streak: int
-    last_task_date: datetime 
-    total_tasks_done: int
-    user_id: str 
-    id: Optional[str] = Field(None, alias='doc_id')
-
-class School(BaseModel):
-    name: str
-    city: str
-    id: Optional[str] = Field(None, alias='doc_id')
+load_dotenv()
 
 
 # ====================================================================
@@ -48,11 +23,10 @@ from app.exam_schemas import Exam as ExamSchema, Question as QuestionSchema, Ans
 # ====================================================================
 # B. CLASS MANAGING CONNECTION TO FIRESTORE (CRUD)
 # ====================================================================
-
 class FirestoreManager:
     
-    # ⚠️ Zmień tę ścieżkę na ścieżkę do Twojego pliku JSON klucza serwisowego ⚠️
-    SERVICE_ACCOUNT_PATH = "/home/bartek/repos/lektur-ai/lektur-ai-firebase-adminsdk-fbsvc-d4c4ac3e60.json"
+    # ⚠️ Change this path to the path to your service account JSON key file ⚠️
+    SERVICE_ACCOUNT_PATH = os.getenv("FIREBASE_CREDENTIALS_PATH")
     
     def __init__(self):
         self.USERS_COLLECTION = 'users'
@@ -72,7 +46,137 @@ class FirestoreManager:
             self.db = firestore.client()
         except Exception as e:
             self.db = None
-            raise RuntimeError(f"Błąd inicjalizacji Firestore: {e}. Sprawdź SERVICE_ACCOUNT_PATH.")
+            raise RuntimeError(f"Error initializing Firestore: {e}. Check SERVICE_ACCOUNT_PATH.")
+
+    # ---------------------------------
+    # CRUD OPERATIONS FOR EXAMS / QUESTIONS / ANSWERS
+    # ---------------------------------
+
+    # ➕ Create exam with questions & answers (from extracted JSON)
+    def create_exam_with_content(
+        self,
+        exam: ExamSchema,
+        questions: List[QuestionSchema],
+        answers: List[AnswerSchema],
+    ) -> Optional[str]:
+        """
+        Stores a single exam document and related questions/answers.
+
+        - Exam is stored in EXAMS_COLLECTION.
+        - Each Question is stored in QUESTIONS_COLLECTION.
+        - Each Answer is stored in ANSWERS_COLLECTION.
+        - Relationships exam <-> question are stored in EXAM_QUESTION_LINKS_COLLECTION.
+        - Answer.question_number is expected to match Question.number.
+        """
+        if not self.db:
+            return None
+
+        try:
+            batch = self.db.batch()
+
+            # 1. Create exam document
+            exam_ref = self.db.collection(self.EXAMS_COLLECTION).document()
+            exam_dict = exam.model_dump(exclude_none=True, exclude={'id'})
+            batch.set(exam_ref, exam_dict)
+
+            # Helper: map question_number -> AnswerSchema
+            answers_by_number: Dict[int, AnswerSchema] = {
+                a.question_number: a for a in answers
+            }
+
+            # 2. Create questions, answers and links
+            for idx, q in enumerate(questions):
+                # Question doc
+                q_ref = self.db.collection(self.QUESTIONS_COLLECTION).document()
+                q_dict = q.model_dump(exclude_none=True, exclude={'id'})
+                batch.set(q_ref, q_dict)
+
+                # Link exam <-> question
+                link_ref = self.db.collection(self.EXAM_QUESTION_LINKS_COLLECTION).document()
+                link = ExamQuestionLink(
+                    exam_id=exam_ref.id,
+                    question_id=q_ref.id,
+                    order=idx + 1,
+                )
+                batch.set(link_ref, link.model_dump(exclude_none=True, exclude={'id'}))
+
+                # Optional: answer for this question_number
+                answer = answers_by_number.get(q.number)
+                if answer:
+                    a_ref = self.db.collection(self.ANSWERS_COLLECTION).document()
+                    a_dict = answer.model_dump(exclude_none=True, exclude={'id'})
+                    # also store explicit foreign keys for easier querying
+                    a_dict['exam_id'] = exam_ref.id
+                    a_dict['question_doc_id'] = q_ref.id
+                    batch.set(a_ref, a_dict)
+
+            # 3. Commit batch
+            batch.commit()
+            return exam_ref.id
+        except Exception as e:
+            print(f"❌ Error creating exam with content: {e}")
+            return None
+
+    # 🔍 Get exam basic data
+    def get_exam(self, exam_id: str) -> Optional[ExamSchema]:
+        if not self.db:
+            return None
+        try:
+            doc = self.db.collection(self.EXAMS_COLLECTION).document(exam_id).get()
+            if doc.exists:
+                return ExamSchema(**doc.to_dict(), doc_id=doc.id)
+            return None
+        except Exception as e:
+            print(f"❌ Error reading exam: {e}")
+            return None
+
+    # 🔍 Get questions for exam (ordered)
+    def get_exam_questions(self, exam_id: str) -> List[QuestionSchema]:
+        if not self.db:
+            return []
+        try:
+            # 1. Get links ordered by 'order'
+            links_query = (
+                self.db.collection(self.EXAM_QUESTION_LINKS_COLLECTION)
+                .where('exam_id', '==', exam_id)
+                .order_by('order')
+            )
+            links_docs = list(links_query.stream())
+            question_ids = [d.get('question_id') for d in (doc.to_dict() for doc in links_docs)]
+
+            # 2. Fetch questions by ids
+            questions: List[QuestionSchema] = []
+            for qid in question_ids:
+                if not qid:
+                    continue
+                q_doc = self.db.collection(self.QUESTIONS_COLLECTION).document(qid).get()
+                if q_doc.exists:
+                    questions.append(QuestionSchema(**q_doc.to_dict(), doc_id=q_doc.id))
+
+            return questions
+        except Exception as e:
+            print(f"❌ Error reading exam questions: {e}")
+            return []
+
+    # 🔍 Get answers for exam (indexed by question_number)
+    def get_exam_answers(self, exam_id: str) -> Dict[int, AnswerSchema]:
+        if not self.db:
+            return {}
+        try:
+            query = self.db.collection(self.ANSWERS_COLLECTION).where('exam_id', '==', exam_id)
+            docs = query.stream()
+            result: Dict[int, AnswerSchema] = {}
+            for doc in docs:
+                data = doc.to_dict()
+                try:
+                    ans = AnswerSchema(**data, doc_id=doc.id)
+                    result[ans.question_number] = ans
+                except Exception as model_err:
+                    print(f"❌ Error parsing answer document {doc.id}: {model_err}")
+            return result
+        except Exception as e:
+            print(f"❌ Error reading exam answers: {e}")
+            return {}
 
     # ---------------------------------
     # CRUD OPERATIONS FOR EXAMS / QUESTIONS / ANSWERS
@@ -274,9 +378,37 @@ class FirestoreManager:
     # ---------------------------------
     # CRUD OPERATIONS FOR 'user-all-time-stats'
     # ---------------------------------
+    def log_to_file(self, message):
+        try:
+            with open("/tmp/db_error_log.txt", "a") as f:
+                f.write(f"{datetime.now(timezone.utc)} - {message}\n")
+        except Exception as file_e:
+            # Probably no write permission; ignore.
+            pass
 
-    # ➕ ADD STATS (Create)
-    def add_user_stats(self, stats_data: UserAllTimeStats, doc_id: Optional[str] = None) -> Optional[str]:
+    def update_stats_after_ex(self, user_id: str, points: int):
+        if not self.db: return None
+
+        stats = self.get_user_stats(user_id)
+        #if stats is None: return
+
+        last_task_date_only = stats.last_task_date.date()
+        today_date_only = datetime.now(timezone.utc).date()
+        updated_stats = {}
+
+        if last_task_date_only != today_date_only:
+            updated_stats['current_streak'] = stats.current_streak + 1
+
+            if stats.current_streak + 1 > stats.longest_streak:
+                updated_stats['longest_streak'] = stats.current_streak + 1
+
+        updated_stats['last_task_date'] = datetime.now(timezone.utc)
+        updated_stats['points'] = stats.points + points
+        updated_stats['total_tasks_done'] = stats.total_tasks_done + 1
+
+        self.db.collection(self.STATS_COLLECTION).document(user_id).update(updated_stats)
+
+    def add_user_stats(self, stats_data: UserAllTimeStats, user_id :str) -> Optional[str]:
         if not self.db: return None
         
         # Ensure last_task_date has UTC timezone set
@@ -285,10 +417,10 @@ class FirestoreManager:
              
         data = stats_data.model_dump(exclude_none=True, exclude={'id'})
         try:
-            if doc_id:
-                # Use the provided ID (common scenario, e.g. user ID)
-                self.db.collection(self.STATS_COLLECTION).document(doc_id).set(data)
-                return doc_id
+            if user_id:
+                # Use the provided ID
+                self.db.collection(self.STATS_COLLECTION).document(user_id).set(data)
+                return user_id
             else:
                 # Generate a new unique document ID and use SET
                 new_doc_ref = self.db.collection(self.STATS_COLLECTION).document()
@@ -299,13 +431,21 @@ class FirestoreManager:
             return None
             
     # 🔍 GET STATS (Read)
-    def get_user_stats(self, stat_id: str) -> Optional[UserAllTimeStats]:
+    def get_user_stats(self, user_id: str) -> Optional[UserAllTimeStats]:
         if not self.db: return None
         try:
-            doc = self.db.collection(self.STATS_COLLECTION).document(stat_id).get()
+            doc = self.db.collection(self.STATS_COLLECTION).document(user_id).get()
             if doc.exists:
                 return UserAllTimeStats(**doc.to_dict(), doc_id=doc.id)
-            return None
+            else:
+                new_stats = UserAllTimeStats(
+                    current_streak=0,
+                    longest_streak=0,
+                    last_task_date=datetime(1970, 1, 1, tzinfo=timezone.utc), # Very old date as default
+                    total_tasks_done=0
+                )
+                self.add_user_stats(new_stats, user_id)
+                return new_stats
         except Exception as e:
             print(f"❌ Error reading stats: {e}")
             return None
@@ -339,6 +479,58 @@ class FirestoreManager:
             return None
 
     # 🔍 Get History Entries (Read)
+    def get_history_by_range(
+        self,
+        stat_id: str,
+        type_filter: str,
+        sort_by: str = "date",
+        from_pos: int = 1, # e.g. 1
+        to_pos: int = 10    # e.g. 10
+    ) -> List[UserHistoryEntry]:
+        
+        if not self.db: return []
+        entries: List[UserHistoryEntry] = []
+        
+        try:
+            history_ref = (self.db.collection(self.STATS_COLLECTION)
+                                 .document(stat_id)
+                                 .collection(self.HISTORY_SUBCOLLECTION))
+
+            # --- COMPUTATION LOGIC ---
+            # If from_pos = 1, we skip nothing (offset = 0)
+            offset_value = max(0, from_pos - 1)
+            
+            # Number of items to fetch is the difference of positions + 1
+            # Example: from 1 to 10 -> (10 - 1) + 1 = 10 items
+            limit_value = to_pos - from_pos + 1
+
+            if limit_value <= 0:
+                return []
+
+            # --- BUILDING THE QUERY ---
+            # 1. Sort (sort first, then slice the range)
+            query = history_ref.order_by(sort_by, direction=firestore.Query.DESCENDING)
+
+            # 2. Filter (optional)
+            if type_filter:
+                query = query.where('type', '==', type_filter)
+
+            # 3. Slice the from-to range
+            query = query.offset(offset_value).limit(limit_value)
+
+            # --- FETCHING ---
+            docs = query.stream()
+            
+            for doc in docs:
+                data = doc.to_dict()
+                entries.append(UserHistoryEntry(**data, doc_id=doc.id))
+            
+            return entries
+
+        except Exception as e:
+            print(f"❌ Error in get_history_by_range: {e}")
+            return []
+    
     def get_history_entries(self, stat_id: str) -> List[UserHistoryEntry]:
         if not self.db: return []
         entries = []

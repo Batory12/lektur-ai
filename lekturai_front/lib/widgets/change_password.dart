@@ -1,6 +1,7 @@
-
-
 import 'package:flutter/material.dart';
+import '../tools/password_validator.dart';
+import '../theme/spacing.dart';
+import '../services/auth_service.dart';
 
 class ChangePasswordWidget extends StatefulWidget {
   final VoidCallback? onCancel;
@@ -22,32 +23,14 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  
+  bool _obscureCurrentPassword = true;
+  bool _obscureNewPassword = true;
+  bool _obscureConfirmPassword = true;
+  bool password_updated = false;
 
   String? _validateConfirmPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Potwierdź swoje hasło';
-    }
-    if (value != _newPasswordController.text) {
-      return 'Hasła nie są zgodne';
-    }
-    return null;
-  }
-
-  String? _validateNewPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Wprowadź nowe hasło';
-    }
-    if (value.length < 6) {
-      return 'Hasło musi mieć co najmniej 6 znaków';
-    }
-    return null;
-  }
-
-  String? _validateCurrentPassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Wprowadź obecne hasło';
-    }
-    return null;
+    return FormValidators.validatePasswordConfirmation(value, _newPasswordController.text);
   }
 
   @override
@@ -58,16 +41,42 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
         children: [
           TextFormField(
             controller: _currentPasswordController,
-            decoration: const InputDecoration(labelText: 'Aktualne Hasło', border: OutlineInputBorder()),
-            obscureText: true,
-            validator: _validateCurrentPassword,
+            decoration: InputDecoration(
+              labelText: 'Aktualne Hasło',
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.lock),
+              suffixIcon: IconButton(
+                icon: Icon(_obscureCurrentPassword ? Icons.visibility : Icons.visibility_off),
+                onPressed: () {
+                  setState(() {
+                    _obscureCurrentPassword = !_obscureCurrentPassword;
+                  });
+                },
+              ),
+            ),
+            obscureText: _obscureCurrentPassword,
+            validator: FormValidators.validateCurrentPassword,
+            textInputAction: TextInputAction.next,
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           TextFormField(
             controller: _newPasswordController,
-            decoration: const InputDecoration(labelText: 'Nowe Hasło', border: OutlineInputBorder()),
-            obscureText: true,
-            validator: _validateNewPassword,
+            decoration: InputDecoration(
+              labelText: 'Nowe Hasło',
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.lock_outline),
+              suffixIcon: IconButton(
+                icon: Icon(_obscureNewPassword ? Icons.visibility : Icons.visibility_off),
+                onPressed: () {
+                  setState(() {
+                    _obscureNewPassword = !_obscureNewPassword;
+                  });
+                },
+              ),
+            ),
+            obscureText: _obscureNewPassword,
+            validator: FormValidators.validatePassword,
+            textInputAction: TextInputAction.next,
             onChanged: (value) {
               // Trigger validation of confirm password field when new password changes
               if (_confirmPasswordController.text.isNotEmpty) {
@@ -75,14 +84,27 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
               }
             },
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           TextFormField(
             controller: _confirmPasswordController,
-            decoration: const InputDecoration(labelText: 'Potwierdź nowe hasło', border: OutlineInputBorder()),
-            obscureText: true,
+            decoration: InputDecoration(
+              labelText: 'Potwierdź nowe hasło',
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.lock),
+              suffixIcon: IconButton(
+                icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
+                onPressed: () {
+                  setState(() {
+                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                  });
+                },
+              ),
+            ),
+            obscureText: _obscureConfirmPassword,
             validator: _validateConfirmPassword,
+            textInputAction: TextInputAction.done,
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.xl),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -91,17 +113,26 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
                   onPressed: widget.onCancel,
                   child: const Text('Anuluj'),
                 ),
-              SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.sm),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState?.validate() ?? false) {
-                    // TODO: Send password change request to the server
+                    password_updated = await AuthService().changePassword(_newPasswordController.text);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Hasło zostało zmienione pomyślnie!')),
+                      SnackBar(
+                        content: Text(password_updated ? 'Hasło zostało zmienione pomyślnie!' : 'Wystąpił błąd podczas zmiany hasła'),
+                        backgroundColor: password_updated ? Colors.green : Colors.red,
+                      ),
                     );
                     widget.onSuccess?.call();
                   }
                 },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
+                    vertical: AppSpacing.md,
+                  ),
+                ),
                 child: const Text('Zmień Hasło'),
               ),
             ],
@@ -109,5 +140,13 @@ class _ChangePasswordWidgetState extends State<ChangePasswordWidget> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 }
