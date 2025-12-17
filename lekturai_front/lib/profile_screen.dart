@@ -4,6 +4,8 @@ import 'package:lekturai_front/services/profile_service.dart';
 import 'package:lekturai_front/widgets/change_password.dart';
 import 'package:lekturai_front/widgets/school_picker.dart';
 import 'package:lekturai_front/widgets/common_scaffold.dart';
+import '../models/user_profile.dart';
+import '../models/user_stats.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -25,6 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Profile State
   UserProfile? _userProfile;
+  UserStats? _userStats;
   bool _isLoading = true;
 
   // UI State
@@ -35,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _loadUserProfile();
+    _loadUserStats();
   }
 
   Future<void> _loadUserProfile() async {
@@ -59,6 +63,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     }
   }
+  Future<void> _loadUserStats() async {
+    try {
+      UserStats? stats = await _profileService.getUserStats();
+      setState(() {
+        _userStats = stats;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Błąd podczas ładowania statystyk: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
 
   Widget _buildSchoolSection() {
     if (_isEditingSchool) {
@@ -229,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '${_userProfile?.balance ?? 0}',
+                            '${_userStats?.points ?? 0}',
                             style: Theme.of(context).textTheme.displayMedium
                                 ?.copyWith(
                                   color: Theme.of(context).primaryColor,
