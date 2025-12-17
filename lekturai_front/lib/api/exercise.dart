@@ -105,7 +105,7 @@ class ReadingGradeResponse {
 }
 
 class MaturaGradeResponse {
-  final int exerciseId;
+  final String exerciseId;
   final double grade;
   final String feedback;
 
