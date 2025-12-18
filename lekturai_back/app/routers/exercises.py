@@ -83,7 +83,7 @@ def grade_reading_exercise(
     # Czy grade może być int?
     try:
         grade_str, feedback = ai_response.split("#GRADE_SEP#", 1)
-        db_manager.update_stats_after_ex(user_id, 2)
+        db_manager.update_stats_after_ex(user_id, int(float(grade_str.strip())*10))
         db_manager.save_readings_to_history(user_id, submission, 2, feedback.strip())
         return GradeResponse(grade=float(grade_str.strip()), feedback=feedback.strip())
     except (ValueError, IndexError):
@@ -249,7 +249,7 @@ def solve_matura_task(
 
         grade_val = float(grade_str)
 
-        db_manager.update_stats_after_ex(user_id, int(grade_val))
+        db_manager.update_stats_after_ex(user_id, int(float(grade_val)*10))
         db_manager.save_matura_ex_to_history(
             user_id, question.text, submission.user_answer, int(grade_val), feedback.strip()
         )
