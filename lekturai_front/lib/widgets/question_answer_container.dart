@@ -186,6 +186,7 @@ class QAState extends State<QuestionAnswerContainer> {
                               ),
                             ),
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 if (reads != null && reads!.isNotEmpty)
                                   IconButton(
@@ -197,8 +198,9 @@ class QAState extends State<QuestionAnswerContainer> {
                                 ElevatedButton.icon(
                                   onPressed: () {
                                     setMaturaAnswer(answerInput.text);
-                                    if (widget.slideOut != null)
+                                    if (widget.slideOut != null) {
                                       widget.slideOut!();
+                                    }
                                   },
                                   label: Text("Wyślij"),
                                   icon: Icon(Icons.rocket_launch),
