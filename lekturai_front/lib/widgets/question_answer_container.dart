@@ -18,6 +18,8 @@ class QuestionAnswerContainer extends StatefulWidget {
   //This is bad, I'll refactor it in fabled "Sometime Later"
   final String? readingName;
   final int? toChapter;
+  final VoidCallback? slideOut;
+  final VoidCallback? slideIn;
 
   const QuestionAnswerContainer({
     super.key,
@@ -31,6 +33,8 @@ class QuestionAnswerContainer extends StatefulWidget {
     required this.isMatura,
     this.readingName,
     this.toChapter,
+    this.slideIn,
+    this.slideOut,
   });
 
   @override
@@ -107,6 +111,7 @@ class QAState extends State<QuestionAnswerContainer> {
         evalTextLoading = false;
         evalTitleLoading = false;
       });
+      if (widget.slideIn != null) widget.slideIn!();
     }
   }
 
@@ -168,17 +173,22 @@ class QAState extends State<QuestionAnswerContainer> {
                       child: Center(
                         child: Column(
                           children: [
-                            TextField(
-                              decoration: InputDecoration(
-                                labelText: "Twoja odpowiedź",
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  labelText: "Twoja odpowiedź",
+                                ),
+                                controller: answerInput,
                               ),
-                              controller: answerInput,
                             ),
-                            ElevatedButton(
+                            ElevatedButton.icon(
                               onPressed: () {
                                 setMaturaAnswer(answerInput.text);
+                                if (widget.slideOut != null) widget.slideOut!();
                               },
-                              child: Text("Submit"),
+                              label: Text("Wyślij"),
+                              icon: Icon(Icons.rocket_launch),
                             ),
                           ],
                         ),
