@@ -61,6 +61,8 @@ class QAState extends State<QuestionAnswerContainer> {
   //This is bad, I'll refactor it in fabled "Sometime Later"
   String? readingName;
   int? toChapter;
+  //This is really bad and needs so much refactoring
+  List<AuxilaryRead>? reads;
 
   final TextEditingController answerInput = TextEditingController();
 
@@ -76,6 +78,7 @@ class QAState extends State<QuestionAnswerContainer> {
     });
     if (question is MaturaExercise) {
       questionId = question.id;
+      reads = question.reads;
     }
   }
 
@@ -182,13 +185,25 @@ class QAState extends State<QuestionAnswerContainer> {
                                 controller: answerInput,
                               ),
                             ),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                setMaturaAnswer(answerInput.text);
-                                if (widget.slideOut != null) widget.slideOut!();
-                              },
-                              label: Text("Wyślij"),
-                              icon: Icon(Icons.rocket_launch),
+                            Row(
+                              children: [
+                                if (reads != null && reads!.isNotEmpty)
+                                  IconButton(
+                                    onPressed: () {
+                                      showReadDialog(context, reads!);
+                                    },
+                                    icon: Icon(Icons.book),
+                                  ),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    setMaturaAnswer(answerInput.text);
+                                    if (widget.slideOut != null)
+                                      widget.slideOut!();
+                                  },
+                                  label: Text("Wyślij"),
+                                  icon: Icon(Icons.rocket_launch),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -213,4 +228,62 @@ class QAState extends State<QuestionAnswerContainer> {
       ),
     );
   }
+}
+
+void showReadDialog(BuildContext context, List<AuxilaryRead> reads) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Wybierz tekst do przeczytania.'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: reads.length,
+            itemBuilder: (context, index) {
+              final read = reads[index];
+              return ListTile(
+                title: Text(read.title),
+                subtitle: Text('autorstwa ${read.author}'),
+                onTap: () {
+                  Navigator.pop(context); // Close the dialog
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text(read.title),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('autorstwa: ${read.author}'),
+                              const SizedBox(height: 10),
+                              Text(read.text),
+                            ],
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Wróć'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Wróć'),
+          ),
+        ],
+      );
+    },
+  );
 }

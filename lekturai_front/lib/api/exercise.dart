@@ -10,16 +10,41 @@ abstract class Exercise {
   Exercise({required this.title, required this.text});
 }
 
+class AuxilaryRead {
+  final String title;
+  final String author;
+  final String text;
+
+  AuxilaryRead({required this.author, required this.text, required this.title});
+}
+
 class MaturaExercise extends Exercise {
   final String id;
+  final List<AuxilaryRead> reads;
 
-  MaturaExercise({required this.id, required super.text, required super.title});
+  MaturaExercise({
+    required this.id,
+    required super.text,
+    required super.title,
+    this.reads = const [],
+  });
 
   factory MaturaExercise.fromJson(Map<String, dynamic> json) {
+    List<dynamic> texts = json['texts'];
+    List<AuxilaryRead> reads = texts
+        .map(
+          (obj) => AuxilaryRead(
+            author: obj['author'],
+            text: obj['text'],
+            title: obj['title'],
+          ),
+        )
+        .toList();
     return MaturaExercise(
       id: json['excercise_id'],
       title: json['excercise_title'],
       text: json['excercise_text'],
+      reads: reads,
     );
   }
 
