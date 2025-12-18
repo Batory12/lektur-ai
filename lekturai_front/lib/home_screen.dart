@@ -43,9 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final average = await MockDataService.getAveragePoints(
         period: _selectedPeriod,
       );
-      final best = await MockDataService.getBestDay(
-        period: _selectedPeriod,
-      );
+      final best = await MockDataService.getBestDay(period: _selectedPeriod);
 
       setState(() {
         _chartData = data;
@@ -82,17 +80,17 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedChartType == ChartType.bar) {
       // Bar charts support different periods based on screen width
       final screenWidth = MediaQuery.of(context).size.width;
-      
+
       // Calculate available horizontal space for the chart
       // Account for screen padding (32px total) and card padding (32px total)
       final chartWidth = screenWidth - 64;
-      
+
       // Each bar needs ~40px of space (16px bar + 24px spacing)
       final barSpaceNeeded = 40;
-      
+
       // Calculate how many bars can fit
       final maxBars = (chartWidth / barSpaceNeeded).floor();
-      
+
       if (maxBars >= 30) {
         // Wide screens (tablets/desktop) can show all periods
         return TimePeriod.values;
@@ -110,30 +108,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onChartTypeChanged(ChartType newType) {
     if (newType == _selectedChartType) return;
-    
+
     // Temporarily update chart type to calculate available periods
     final tempChartType = newType;
     final previousChartType = _selectedChartType;
     final previousPeriod = _selectedPeriod;
     _selectedChartType = tempChartType;
-    
+
     // Get available periods for the new chart type
     final availablePeriods = _getAvailablePeriods();
-    
+
     // Restore previous chart type before setState
     _selectedChartType = previousChartType;
-    
+
     // Determine the new period (keep current if available, otherwise use longest available)
-    final newPeriod = availablePeriods.contains(previousPeriod) 
-        ? previousPeriod 
+    final newPeriod = availablePeriods.contains(previousPeriod)
+        ? previousPeriod
         : availablePeriods.last;
-    
+
     // Now update with both chart type and period
     setState(() {
       _selectedChartType = tempChartType;
       _selectedPeriod = newPeriod;
     });
-    
+
     // Reload data if period changed
     if (newPeriod != previousPeriod) {
       _loadData();
@@ -153,12 +151,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Welcome Section
-                  Text(
-                    'Twoje statystyki',
-                    style: AppTextStyles.heading1,
-                  ),
+                  Text('Twoje statystyki', style: AppTextStyles.heading1),
                   const SizedBox(height: AppSpacing.sm),
-                  
+
                   // Period Selector
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -220,22 +215,22 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: AppColors.white,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: AppColors.border),
-                            ),                          
+                            ),
                             child: DropdownButton<TimePeriod>(
-                            value: _selectedPeriod,
-                            underline: const SizedBox(),
-                            isDense: true,
-                            items: _getAvailablePeriods().map((period) {
-                              return DropdownMenuItem<TimePeriod>(
-                                value: period,
-                                child: Text(
-                                  period.label,
-                                  style: AppTextStyles.bodyMedium,
-                                ),
-                              );
-                            }).toList(),
-                            onChanged: _onPeriodChanged,
-                          ),
+                              value: _selectedPeriod,
+                              underline: const SizedBox(),
+                              isDense: true,
+                              items: _getAvailablePeriods().map((period) {
+                                return DropdownMenuItem<TimePeriod>(
+                                  value: period,
+                                  child: Text(
+                                    period.label,
+                                    style: AppTextStyles.bodyMedium,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: _onPeriodChanged,
+                            ),
                           ),
                         ],
                       ),
@@ -268,7 +263,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: AppSpacing.md),
                   _buildStatCard(
                     title: 'Najlepszy dzień',
-                    value: '${_bestDay?.label ?? '-'}: ${_bestDay?.value.toInt() ?? 0} pkt',
+                    value:
+                        '${_bestDay?.label ?? '-'}: ${_bestDay?.value.toInt() ?? 0} pkt',
                     icon: Icons.emoji_events,
                     color: Colors.amber,
                   ),
@@ -276,8 +272,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Bar Chart
                   CustomChart(
-                    key: ValueKey('${_selectedChartType.name}_${_selectedPeriod.days}'),
-                    title: 'Punkty zdobyte - ${_selectedPeriod.label.toLowerCase()}',
+                    key: ValueKey(
+                      '${_selectedChartType.name}_${_selectedPeriod.days}',
+                    ),
+                    title:
+                        'Punkty zdobyte - ${_selectedPeriod.label.toLowerCase()}',
                     data: _chartData,
                     chartType: _selectedChartType,
                     height: 300,
@@ -286,21 +285,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     showValues: true,
                     enableAnimation: true,
                   ),
-                  
+
                   const SizedBox(height: AppSpacing.sectionSpacing),
-                  
+
                   // Quick Actions
-                  Text(
-                    'Szybkie akcje',
-                    style: AppTextStyles.heading2,
-                  ),
+                  Text('Szybkie akcje', style: AppTextStyles.heading2),
                   const SizedBox(height: AppSpacing.lg),
                   _buildQuickActionButton(
                     context,
                     title: 'Zadania z lektur',
                     icon: Icons.book,
                     color: AppColors.primary,
-                    onTap: () => Navigator.pushNamed(context, '/zlektur'),
+                    onTap: () => showReadingPicker(context),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   _buildQuickActionButton(
@@ -341,12 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Icon(icon, color: color, size: 20),
                 const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: AppTextStyles.bodySmall,
-                  ),
-                ),
+                Expanded(child: Text(title, style: AppTextStyles.bodySmall)),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -410,4 +401,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-

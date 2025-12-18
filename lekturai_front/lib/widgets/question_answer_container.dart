@@ -111,8 +111,8 @@ class QAState extends State<QuestionAnswerContainer> {
         evalTextLoading = false;
         evalTitleLoading = false;
       });
-      if (widget.slideIn != null) widget.slideIn!();
     }
+    if (widget.slideIn != null) widget.slideIn!();
   }
 
   @override
