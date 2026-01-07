@@ -80,6 +80,7 @@ class ReadingExerciseSubmit(BaseModel):
 class GradeResponse(BaseModel):
     grade: float
     feedback: str
+    ai_detection_score: float | None = None
 
 
 # --- Exercises (Matura) ---
@@ -101,6 +102,7 @@ class MaturaGradeResponse(BaseModel):
     grade: float
     feedback: str
     answer_key: str
+    ai_detection_score: float | None = None
 #    max_points: int
 
 
