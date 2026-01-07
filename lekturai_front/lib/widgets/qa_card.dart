@@ -26,7 +26,6 @@ class QACard extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(
             minWidth: 300.0,
-            minHeight: 200.0,
             maxWidth: screenWidth * 0.95,
           ),
           child: child,

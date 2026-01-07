@@ -63,6 +63,7 @@ class QAState extends State<QuestionAnswerContainer> {
   int? toChapter;
   //This is really bad and needs so much refactoring
   List<AuxilaryRead>? reads;
+  String? answerKey;
 
   final TextEditingController answerInput = TextEditingController();
 
@@ -95,6 +96,7 @@ class QAState extends State<QuestionAnswerContainer> {
     if (isMatura) {
       final submit = MaturaSubmit(answer: newAnswer, id: questionId!);
       final grade = await api.submitMaturaExercise(submit, uid!);
+      answerKey = grade.answerKey;
       setState(() {
         evaluationText = grade.feedback;
         evaluationTitle = "Ocena: ${grade.grade}";
@@ -166,7 +168,33 @@ class QAState extends State<QuestionAnswerContainer> {
               answerText != null
                   ? QACard(
                       color: AppColors.primaryLight,
-                      child: Text(answerText!),
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(answerText!),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (answerKey != null && answerKey!.isNotEmpty)
+                                IconButton(
+                                  onPressed: () {
+                                    showTextDialog(context, answerKey!);
+                                  },
+                                  icon: Icon(Icons.key),
+                                ),
+                              if (reads != null && reads!.isNotEmpty)
+                                IconButton(
+                                  onPressed: () {
+                                    showReadDialog(context, reads!);
+                                  },
+                                  icon: Icon(Icons.book),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
                     )
                   : QACard(
                       //"disappears" the card
@@ -188,6 +216,13 @@ class QAState extends State<QuestionAnswerContainer> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
+                                if (answerKey != null && answerKey!.isNotEmpty)
+                                  IconButton(
+                                    onPressed: () {
+                                      showTextDialog(context, answerKey!);
+                                    },
+                                    icon: Icon(Icons.key),
+                                  ),
                                 if (reads != null && reads!.isNotEmpty)
                                   IconButton(
                                     onPressed: () {
@@ -277,6 +312,29 @@ void showReadDialog(BuildContext context, List<AuxilaryRead> reads) {
                 },
               );
             },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Wróć'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void showTextDialog(BuildContext context, String answerKey) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Klucz odpowiedzi'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [Text(answerKey)],
           ),
         ),
         actions: [

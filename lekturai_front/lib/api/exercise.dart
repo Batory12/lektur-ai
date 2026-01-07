@@ -133,11 +133,13 @@ class MaturaGradeResponse {
   final String exerciseId;
   final double grade;
   final String feedback;
+  final String answerKey;
 
   MaturaGradeResponse({
     required this.exerciseId,
     required this.grade,
     required this.feedback,
+    required this.answerKey,
   });
 
   factory MaturaGradeResponse.fromJson(Map<String, dynamic> json) {
@@ -145,11 +147,17 @@ class MaturaGradeResponse {
       exerciseId: json['excercise_id'],
       grade: json['grade'],
       feedback: json['feedback'],
+      answerKey: json['answer_key'],
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'grade': grade, 'feedback': feedback, 'excercise_id': exerciseId};
+    return {
+      'grade': grade,
+      'feedback': feedback,
+      'excercise_id': exerciseId,
+      'answer_key': answerKey,
+    };
   }
 }
 
