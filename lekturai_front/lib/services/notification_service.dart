@@ -205,19 +205,59 @@ class NotificationService {
       return;
     }
 
-    // Calculate next notification time based on frequency
-    DateTime nextNotification = _calculateNextNotificationTime(frequency);
-    
-    // Schedule the notification
-    await _scheduleNotification(
-      id: 1,
-      title: 'Czas na naukę! 📚',
-      body: 'Przypomnij sobie o swoim celu - egzamin maturalny zbliża się!',
-      scheduledDate: nextNotification,
-      frequency: frequency,
-    );
+    // For "every 3 days", we need to schedule multiple notifications
+    if (frequency == 'Co 3 dni') {
+      await _scheduleEveryThreeDaysNotifications();
+    } else {
+      // For daily and weekly, schedule with repeat
+      DateTime nextNotification = _calculateNextNotificationTime(frequency);
+      await _scheduleNotification(
+        id: 1,
+        title: 'Czas na naukę! 📚',
+        body: 'Przypomnij sobie o swoim celu - egzamin maturalny zbliża się!',
+        scheduledDate: nextNotification,
+        frequency: frequency,
+      );
+    }
 
-    print('Notification scheduled for: $nextNotification with frequency: $frequency');
+    print('Notifications scheduled for frequency: $frequency');
+  }
+
+  // Schedule multiple notifications for every 3 days (up to 3 months ahead)
+  Future<void> _scheduleEveryThreeDaysNotifications() async {
+    DateTime now = DateTime.now();
+    DateTime scheduled = DateTime(now.year, now.month, now.day, 10, 0);
+    
+    // If today's time has passed, start from tomorrow
+    if (now.hour >= 10) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    // Schedule notifications every 3 days for the next 90 days (30 notifications)
+    for (int i = 0; i < 30; i++) {
+      DateTime notificationTime = scheduled.add(Duration(days: i * 3));
+      
+      await _localNotifications.zonedSchedule(
+        i + 1, // ID from 1 to 30
+        'Czas na naukę! 📚',
+        'Przypomnij sobie o swoim celu - egzamin maturalny zbliża się!',
+        _convertToTZDateTime(notificationTime),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'learning_reminders',
+            'Przypomnienia o nauce',
+            channelDescription: 'Powiadomienia przypominające o nauce do matury',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    }
+    
+    print('Scheduled 30 notifications every 3 days');
   }
 
   // Calculate next notification time based on frequency
@@ -237,10 +277,6 @@ class NotificationService {
     switch (frequency) {
       case 'Codziennie':
         // Already set to next 10:00 AM
-        break;
-      case 'Co 3 dni':
-        // If it's been scheduled, add 3 days
-        // For first time, keep the next 10:00 AM
         break;
       case 'Raz w tygodniu':
         // Schedule for next Monday at 10:00 AM
@@ -276,54 +312,31 @@ class NotificationService {
       android: androidDetails,
     );
 
-    // Calculate repeat interval
-    RepeatInterval? repeatInterval;
+    // Calculate match components for repeating notifications
+    DateTimeComponents? matchComponents;
     switch (frequency) {
       case 'Codziennie':
-        repeatInterval = RepeatInterval.daily;
-        break;
-      case 'Co 3 dni':
-        // Flutter local notifications doesn't support every 3 days directly
-        // We'll need to reschedule after each notification
-        repeatInterval = null;
+        matchComponents = DateTimeComponents.time;
         break;
       case 'Raz w tygodniu':
-        repeatInterval = RepeatInterval.weekly;
+        matchComponents = DateTimeComponents.dayOfWeekAndTime;
         break;
       default:
-        repeatInterval = null;
+        matchComponents = null;
     }
 
     // Schedule the notification
-    if (repeatInterval != null) {
-      // For daily and weekly
-      await _localNotifications.zonedSchedule(
-        id,
-        title,
-        body,
-        _convertToTZDateTime(scheduledDate),
-        notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: repeatInterval == RepeatInterval.daily
-            ? DateTimeComponents.time
-            : DateTimeComponents.dayOfWeekAndTime,
-      );
-    } else {
-      // For every 3 days - schedule single notification
-      // We'll need to reschedule after it fires
-      await _localNotifications.zonedSchedule(
-        id,
-        title,
-        body,
-        _convertToTZDateTime(scheduledDate),
-        notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-      );
-    }
+    await _localNotifications.zonedSchedule(
+      id,
+      title,
+      body,
+      _convertToTZDateTime(scheduledDate),
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: matchComponents,
+    );
   }
 
   // Convert DateTime to TZDateTime
