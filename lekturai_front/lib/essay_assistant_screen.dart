@@ -403,24 +403,30 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
       showDrawer: true,
       useResponsiveLayout: false,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: AppSpacing.safeAreaPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTitleCard(),
-              _buildContextSelector(),
-              _buildSelectedContexts(),
-              const SizedBox(height: AppSpacing.sectionSpacing),
-              _buildGenerateButton(),
-              const SizedBox(height: AppSpacing.sm),
-              _buildDebugButtons(),
-              _buildGeneratedContexts(),
-              // Add extra bottom padding to ensure content is always visible
-              SizedBox(
-                height: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800.0),
+            child: SingleChildScrollView(
+              padding: AppSpacing.safeAreaPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTitleCard(),
+                  _buildContextSelector(),
+                  _buildSelectedContexts(),
+                  const SizedBox(height: AppSpacing.sectionSpacing),
+                  _buildGenerateButton(),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildDebugButtons(),
+                  _buildGeneratedContexts(),
+                  // Add extra bottom padding to ensure content is always visible
+                  SizedBox(
+                    height: MediaQuery.of(context).padding.bottom + AppSpacing.lg,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
