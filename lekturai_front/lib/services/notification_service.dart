@@ -358,4 +358,18 @@ class NotificationService {
       body: 'To jest testowe powiadomienie. Twoje przypomnienia działają!',
     );
   }
+
+  // Get pending notification count (for debugging)
+  Future<int> getPendingNotificationCount() async {
+    final pending = await _localNotifications.pendingNotificationRequests();
+    return pending.length;
+  }
+
+  // Get list of pending notifications (for debugging)
+  Future<List<String>> getPendingNotificationsList() async {
+    final pending = await _localNotifications.pendingNotificationRequests();
+    return pending.map((notif) => 
+      'ID: ${notif.id}, Title: ${notif.title}, Body: ${notif.body}'
+    ).toList();
+  }
 }

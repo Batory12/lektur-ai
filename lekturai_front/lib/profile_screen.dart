@@ -167,6 +167,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  String _getNotificationDescription(String frequency) {
+    switch (frequency) {
+      case 'Codziennie':
+        return 'Otrzymasz przypomnienie codziennie o 10:00';
+      case 'Co 3 dni':
+        return 'Otrzymasz przypomnienie co 3 dni o 10:00';
+      case 'Raz w tygodniu':
+        return 'Otrzymasz przypomnienie w każdy poniedziałek o 10:00';
+      case 'Nigdy':
+        return 'Nie będziesz otrzymywać przypomnień';
+      default:
+        return '';
+    }
+  }
+
   Widget _buildPasswordSection() {
     if (_isChangingPassword) {
       return ChangePasswordWidget(
@@ -325,6 +340,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           }
                         }
                       },
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _getNotificationDescription(_notificationFrequency),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
                     ),
                     const SizedBox(height: 40),
                     // Logout Button
