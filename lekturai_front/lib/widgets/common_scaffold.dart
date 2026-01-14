@@ -87,7 +87,7 @@ class CommonScaffold extends StatelessWidget {
     return SafeArea(
       child: Column(
         children: [
-          Padding(
+          const Padding(
             padding: EdgeInsets.only(bottom: 20.0, top: 20.0),
             child: Text('Aktywności'),
           ),
@@ -112,7 +112,7 @@ class CommonScaffold extends StatelessWidget {
               Navigator.pushNamed(context, '/rozprawka');
             },
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.symmetric(horizontal: 10.0),
             child: Divider(
               height: 20.0,
@@ -120,7 +120,7 @@ class CommonScaffold extends StatelessWidget {
               color: Colors.blueGrey,
             ),
           ),
-          Padding(
+          const Padding(
             padding: EdgeInsets.only(bottom: 20.0, top: 20.0),
             child: Text('Dane'),
           ),
