@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'notification_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -21,6 +22,11 @@ class AuthService {
         email: email,
         password: password,
       );
+      
+      // Update last login and reschedule notifications
+      await updateLastLoginTime();
+      await _rescheduleNotifications();
+      
       return AuthResult(success: true, user: result.user);
     } on FirebaseAuthException catch (e) {
       return AuthResult(success: false, error: _getErrorMessage(e.code));
@@ -88,6 +94,26 @@ class AuthService {
         });
       } catch (e) {
         print('Błąd podczas aktualizacji czasu logowania: $e');
+      }
+    }
+  }
+
+  // Reschedule notifications based on user preference
+  Future<void> _rescheduleNotifications() async {
+    if (currentUser != null) {
+      try {
+        DocumentSnapshot doc = await _firestore
+            .collection('users')
+            .doc(currentUser!.uid)
+            .get();
+        
+        if (doc.exists) {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          String frequency = data['notificationFrequency'] ?? 'Codziennie';
+          await NotificationService().scheduleNotifications(frequency);
+        }
+      } catch (e) {
+        print('Błąd podczas planowania powiadomień: $e');
       }
     }
   }

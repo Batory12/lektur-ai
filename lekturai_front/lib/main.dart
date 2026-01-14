@@ -7,6 +7,7 @@ import 'package:lekturai_front/matura_questions_screen.dart';
 import 'package:lekturai_front/reading_question_screen.dart';
 import 'package:lekturai_front/register_screen.dart';
 import 'package:lekturai_front/widgets/auth_wrapper.dart';
+import 'package:lekturai_front/services/notification_service.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
@@ -25,6 +26,9 @@ void main() async {
 
   // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize notification service
+  await NotificationService().initialize();
 
   runApp(const MyApp());
 }

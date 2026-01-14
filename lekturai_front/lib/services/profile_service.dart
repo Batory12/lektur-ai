@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lekturai_front/models/user_stats.dart';
 import '../models/user_profile.dart';
+import 'notification_service.dart';
 
 class ProfileService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -179,6 +180,9 @@ class ProfileService {
         'notificationFrequency': frequency,
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      // Schedule notifications based on the new frequency
+      await NotificationService().scheduleNotifications(frequency);
 
       return ProfileUpdateResult(
         success: true,
