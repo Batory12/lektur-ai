@@ -250,7 +250,7 @@ class QAState extends State<QuestionAnswerContainer> {
                 Column(
                   children: [
                     TextOrLoading(
-                      text: evaluationTitle,
+                      text: evaluationTitle != "" ? "# $evaluationTitle" : "",
                       finished: !evalTitleLoading,
                     ),
                     TextOrLoading(
