@@ -24,6 +24,8 @@ class NotificationService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _initialized = false;
+  bool _tokenRefreshListenerSet = false;
+  int _notificationIdCounter = 100; // Start from 100 to avoid conflicts with scheduled ones
 
   // Initialize the notification service
   Future<void> initialize() async {
@@ -158,8 +160,10 @@ class NotificationService {
       android: androidDetails,
     );
 
+    // Use counter for ID to avoid conflicts
+    _notificationIdCounter++;
     await _localNotifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      _notificationIdCounter,
       title,
       body,
       notificationDetails,
@@ -183,15 +187,31 @@ class NotificationService {
 
       print('FCM token saved: $token');
 
-      // Listen for token refresh
-      _firebaseMessaging.onTokenRefresh.listen((newToken) {
-        _firestore.collection('users').doc(user.uid).update({
-          'fcmToken': newToken,
-          'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+      // Set up token refresh listener only once
+      if (!_tokenRefreshListenerSet) {
+        _firebaseMessaging.onTokenRefresh.listen((newToken) {
+          _updateDeviceToken(newToken);
         });
-      });
+        _tokenRefreshListenerSet = true;
+      }
     } catch (e) {
       print('Error saving device token: $e');
+    }
+  }
+
+  // Update device token when it refreshes
+  Future<void> _updateDeviceToken(String newToken) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      await _firestore.collection('users').doc(user.uid).update({
+        'fcmToken': newToken,
+        'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
+      });
+      print('FCM token updated: $newToken');
+    } catch (e) {
+      print('Error updating device token: $e');
     }
   }
 
@@ -225,13 +245,7 @@ class NotificationService {
 
   // Schedule multiple notifications for every 3 days (up to 3 months ahead)
   Future<void> _scheduleEveryThreeDaysNotifications() async {
-    DateTime now = DateTime.now();
-    DateTime scheduled = DateTime(now.year, now.month, now.day, 10, 0);
-    
-    // If today's time has passed, start from tomorrow
-    if (now.hour >= 10) {
-      scheduled = scheduled.add(const Duration(days: 1));
-    }
+    DateTime scheduled = _getNextScheduledTime(DateTime.now());
 
     // Schedule notifications every 3 days for the next 90 days (30 notifications)
     for (int i = 0; i < 30; i++) {
@@ -260,18 +274,22 @@ class NotificationService {
     print('Scheduled 30 notifications every 3 days');
   }
 
-  // Calculate next notification time based on frequency
-  DateTime _calculateNextNotificationTime(String frequency) {
-    DateTime now = DateTime.now();
-    DateTime scheduled;
-
-    // Set notification time to 10:00 AM
-    scheduled = DateTime(now.year, now.month, now.day, 10, 0);
-
+  // Helper method to get next scheduled time at 10:00 AM
+  DateTime _getNextScheduledTime(DateTime now) {
+    DateTime scheduled = DateTime(now.year, now.month, now.day, 10, 0);
+    
     // If today's time has passed, start from tomorrow
     if (now.hour >= 10) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
+    
+    return scheduled;
+  }
+
+  // Calculate next notification time based on frequency
+  DateTime _calculateNextNotificationTime(String frequency) {
+    DateTime now = DateTime.now();
+    DateTime scheduled = _getNextScheduledTime(now);
 
     // Adjust based on frequency
     switch (frequency) {
@@ -281,8 +299,9 @@ class NotificationService {
       case 'Raz w tygodniu':
         // Schedule for next Monday at 10:00 AM
         int daysUntilMonday = (DateTime.monday - scheduled.weekday + 7) % 7;
-        if (daysUntilMonday == 0 && now.hour >= 10) {
-          daysUntilMonday = 7; // Next week
+        if (daysUntilMonday == 0 && scheduled.isBefore(now)) {
+          // If it's Monday but time has passed, schedule for next Monday
+          daysUntilMonday = 7;
         }
         scheduled = scheduled.add(Duration(days: daysUntilMonday));
         break;
