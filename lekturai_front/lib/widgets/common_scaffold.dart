@@ -4,6 +4,9 @@ import 'package:lekturai_front/reading_question_screen.dart';
 import 'package:lekturai_front/widgets/responsive_center.dart';
 import 'package:lekturai_front/widgets/custom_app_bar.dart';
 
+// Breakpoint for large screens (desktop/tablet landscape)
+const double kLargeScreenBreakpoint = 1024.0;
+
 class CommonScaffold extends StatelessWidget {
   final String title;
   final Widget body;
@@ -24,87 +27,126 @@ class CommonScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Wrap body with SafeArea if needed
-    Widget bodyWidget = useResponsiveLayout
-        ? ResponsiveCenter(child: body)
-        : body;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isLargeScreen = constraints.maxWidth >= kLargeScreenBreakpoint;
 
-    if (useSafeArea) {
-      bodyWidget = SafeArea(child: bodyWidget);
-    }
+        // Wrap body with SafeArea if needed
+        Widget bodyWidget = useResponsiveLayout
+            ? ResponsiveCenter(child: body)
+            : body;
 
-    return Scaffold(
-      appBar: CustomAppBar(title: title, showDrawerIcon: showDrawer),
-      drawer: showDrawer
-          ? Drawer(
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 20.0, top: 20.0),
-                      child: Text('Aktywności'),
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.today),
-                      title: Text('Zadania z lektur'),
-                      onTap: () {
-                        showReadingPicker(context);
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.tab),
-                      title: Text('Zadania maturalne'),
-                      onTap: () {
-                        Navigator.pushNamed(context, '/zmatur');
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.edit),
-                      title: Text('Asystent rozprawki'),
-                      onTap: () {
-                        Navigator.pushNamed(context, '/rozprawka');
-                      },
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10.0),
-                      child: Divider(
-                        height: 20.0,
-                        thickness: 1.0,
-                        color: Colors.blueGrey,
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(bottom: 20.0, top: 20.0),
-                      child: Text('Dane'),
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.home),
-                      title: Text('Strona główna'),
-                      onTap: () {
-                        Navigator.pushNamed(context, '/home');
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.history),
-                      title: Text('Historia odpowiedzi'),
-                      onTap: () {
-                        Navigator.pushNamed(context, '/historia');
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.person),
-                      title: Text('Profil'),
-                      onTap: () {
-                        Navigator.pushNamed(context, '/profile');
-                      },
-                    ),
-                  ],
+        if (useSafeArea) {
+          bodyWidget = SafeArea(child: bodyWidget);
+        }
+
+        // For large screens with drawer enabled, use permanent drawer layout
+        if (isLargeScreen && showDrawer) {
+          return Scaffold(
+            appBar: CustomAppBar(title: title, showDrawerIcon: false),
+            body: Row(
+              children: [
+                // Permanent drawer on the left
+                SizedBox(
+                  width: 280,
+                  child: _buildDrawerContent(context),
                 ),
-              ),
-            )
-          : null,
-      body: bodyWidget,
-      floatingActionButton: floatingActionButton,
+                // Divider between drawer and content
+                const VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                ),
+                // Main content area
+                Expanded(
+                  child: bodyWidget,
+                ),
+              ],
+            ),
+            floatingActionButton: floatingActionButton,
+          );
+        }
+
+        // For small screens or no drawer, use traditional drawer
+        return Scaffold(
+          appBar: CustomAppBar(title: title, showDrawerIcon: showDrawer),
+          drawer: showDrawer ? _buildDrawer(context) : null,
+          body: bodyWidget,
+          floatingActionButton: floatingActionButton,
+        );
+      },
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: _buildDrawerContent(context),
+    );
+  }
+
+  Widget _buildDrawerContent(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.only(bottom: 20.0, top: 20.0),
+            child: Text('Aktywności'),
+          ),
+          ListTile(
+            leading: Icon(Icons.today),
+            title: Text('Zadania z lektur'),
+            onTap: () {
+              showReadingPicker(context);
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.tab),
+            title: Text('Zadania maturalne'),
+            onTap: () {
+              Navigator.pushNamed(context, '/zmatur');
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.edit),
+            title: Text('Asystent rozprawki'),
+            onTap: () {
+              Navigator.pushNamed(context, '/rozprawka');
+            },
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10.0),
+            child: Divider(
+              height: 20.0,
+              thickness: 1.0,
+              color: Colors.blueGrey,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(bottom: 20.0, top: 20.0),
+            child: Text('Dane'),
+          ),
+          ListTile(
+            leading: Icon(Icons.home),
+            title: Text('Strona główna'),
+            onTap: () {
+              Navigator.pushNamed(context, '/home');
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.history),
+            title: Text('Historia odpowiedzi'),
+            onTap: () {
+              Navigator.pushNamed(context, '/historia');
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.person),
+            title: Text('Profil'),
+            onTap: () {
+              Navigator.pushNamed(context, '/profile');
+            },
+          ),
+        ],
+      ),
     );
   }
 }
