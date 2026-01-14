@@ -655,6 +655,7 @@ dependencies = [
     { name = "google-genai" },
     { name = "pydantic" },
     { name = "python-dotenv" },
+    { name = "requests" },
     { name = "tenacity" },
     { name = "uvicorn" },
 ]
@@ -672,6 +673,7 @@ requires-dist = [
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
+    { name = "requests", specifier = ">=2.31.0" },
     { name = "tenacity", specifier = ">=9.1.2" },
     { name = "uvicorn" },
 ]

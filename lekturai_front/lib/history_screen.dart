@@ -3,6 +3,7 @@ import 'package:lekturai_front/api/history.dart';
 import 'package:lekturai_front/services/profile_service.dart';
 import 'package:lekturai_front/widgets/common_scaffold.dart';
 import 'package:lekturai_front/widgets/question_answer_container.dart';
+import 'package:intl/intl.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -92,14 +93,34 @@ class HistoryScreenState extends State<HistoryScreen> {
       if (maturas.isNotEmpty) {
         final question = maturas[0];
         loadedItems.add(
-          QuestionAnswerContainer(
-            isMatura: true,
-            questionText: question.question,
-            answerText: question.answer,
-            evaluationText: question.eval,
-            evaluationTitle: "${question.points}",
-            evalInitiallyLoading: false,
-            questionInitiallyLoading: false,
+          Column(
+            children: [
+              const Divider(
+                height: 20,
+                thickness: 1,
+                color: Colors.grey,
+                indent: 10,
+                endIndent: 10,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(DateFormat("dd-MM-yyyy kk:mm").format(question.date)),
+                  question.type == "reading"
+                      ? Text("Zadanie z lektur")
+                      : Text("Zadanie z matury"),
+                ],
+              ),
+              QuestionAnswerContainer(
+                isMatura: true,
+                questionText: question.question,
+                answerText: question.answer,
+                evaluationText: question.eval,
+                evaluationTitle: "${question.points}",
+                evalInitiallyLoading: false,
+                questionInitiallyLoading: false,
+              ),
+            ],
           ),
         );
         maturas.removeAt(0);
@@ -107,42 +128,102 @@ class HistoryScreenState extends State<HistoryScreen> {
     } else if (maturas.isEmpty) {
       final question = readings[0];
       loadedItems.add(
-        QuestionAnswerContainer(
-          isMatura: true,
-          questionText: question.question,
-          answerText: question.answer,
-          evaluationText: question.eval,
-          evaluationTitle: "${question.points}",
-          evalInitiallyLoading: false,
-          questionInitiallyLoading: false,
+        Column(
+          children: [
+            const Divider(
+              height: 20,
+              thickness: 1,
+              color: Colors.grey,
+              indent: 10,
+              endIndent: 10,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(DateFormat("dd-MM-yyyy kk:mm").format(question.date)),
+                question.type == "reading"
+                    ? Text("Zadanie z lektur")
+                    : Text("Zadanie z matury"),
+              ],
+            ),
+            QuestionAnswerContainer(
+              isMatura: false,
+              questionText: question.question,
+              answerText: question.answer,
+              evaluationText: question.eval,
+              evaluationTitle: "${question.points}",
+              evalInitiallyLoading: false,
+              questionInitiallyLoading: false,
+            ),
+          ],
         ),
       );
       readings.removeAt(0);
     } else if (readings[0].date.isBefore(maturas[0].date)) {
       final question = readings[0];
       loadedItems.add(
-        QuestionAnswerContainer(
-          isMatura: true,
-          questionText: question.question,
-          answerText: question.answer,
-          evaluationText: question.eval,
-          evaluationTitle: "${question.points}",
-          evalInitiallyLoading: false,
-          questionInitiallyLoading: false,
+        Column(
+          children: [
+            const Divider(
+              height: 20,
+              thickness: 1,
+              color: Colors.grey,
+              indent: 10,
+              endIndent: 10,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(DateFormat("dd-MM-yyyy kk:mm").format(question.date)),
+                question.type == "reading"
+                    ? Text("Zadanie z lektur")
+                    : Text("Zadanie z matury"),
+              ],
+            ),
+            QuestionAnswerContainer(
+              isMatura: false,
+              questionText: question.question,
+              answerText: question.answer,
+              evaluationText: question.eval,
+              evaluationTitle: "${question.points}",
+              evalInitiallyLoading: false,
+              questionInitiallyLoading: false,
+            ),
+          ],
         ),
       );
       readings.removeAt(0);
     } else {
       final question = maturas[0];
       loadedItems.add(
-        QuestionAnswerContainer(
-          isMatura: true,
-          questionText: question.question,
-          answerText: question.answer,
-          evaluationText: question.eval,
-          evaluationTitle: "${question.points}",
-          evalInitiallyLoading: false,
-          questionInitiallyLoading: false,
+        Column(
+          children: [
+            const Divider(
+              height: 20,
+              thickness: 1,
+              color: Colors.grey,
+              indent: 10,
+              endIndent: 10,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(DateFormat("dd-MM-yyyy kk:mm").format(question.date)),
+                question.type == "reading"
+                    ? Text("Zadanie z lektur")
+                    : Text("Zadanie z matury"),
+              ],
+            ),
+            QuestionAnswerContainer(
+              isMatura: true,
+              questionText: question.question,
+              answerText: question.answer,
+              evaluationText: question.eval,
+              evaluationTitle: "${question.points}",
+              evalInitiallyLoading: false,
+              questionInitiallyLoading: false,
+            ),
+          ],
         ),
       );
       maturas.removeAt(0);
