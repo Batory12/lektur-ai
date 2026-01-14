@@ -14,6 +14,7 @@ from app.schemas import (
 
 # Import the service and dependency
 from app.services.ai_service import AIService, get_ai_service
+from app.services.sapling_service import SaplingService, get_sapling_service
 
 from ..db_utils import db_manager
 
@@ -61,6 +62,7 @@ def grade_reading_exercise(
     submission: ReadingExerciseSubmit,
     user_id: str,
     ai_service: AIService = Depends(get_ai_service),
+    sapling_service: SaplingService = Depends(get_sapling_service),
 ) -> GradeResponse:
     """Ocenia zadanie z lektury przy użyciu Gemini."""
 
@@ -78,17 +80,26 @@ def grade_reading_exercise(
     # Krok 2: Wywołanie API przez Service
     ai_response = ai_service.generate_content(prompt)
 
-    # Krok 3: Parsowanie odpowiedzi
+    # Krok 3: Detekcja AI w odpowiedzi użytkownika
+    ai_detection_score = sapling_service.detect_ai_text(submission.user_answer)
+
+    # Krok 4: Parsowanie odpowiedzi
     # TODO:: USTALIĆ JAK KONWERTOWAĆ GRADE NA POINTS!!!!!
     # Czy grade może być int?
     try:
         grade_str, feedback = ai_response.split("#GRADE_SEP#", 1)
         db_manager.update_stats_after_ex(user_id, int(float(grade_str.strip())*10))
         db_manager.save_readings_to_history(user_id, submission, 2, feedback.strip())
-        return GradeResponse(grade=float(grade_str.strip()), feedback=feedback.strip())
+        return GradeResponse(
+            grade=float(grade_str.strip()),
+            feedback=feedback.strip(),
+            ai_detection_score=ai_detection_score,
+        )
     except (ValueError, IndexError):
         return GradeResponse(
-            grade=3.0, feedback="Błąd parsowania odpowiedzi AI. Spróbuj ponownie."
+            grade=3.0,
+            feedback="Błąd parsowania odpowiedzi AI. Spróbuj ponownie.",
+            ai_detection_score=ai_detection_score,
         )
 
 
@@ -164,6 +175,7 @@ def solve_matura_task(
     submission: MaturaSubmit,
     user_id: str,
     ai_service: AIService = Depends(get_ai_service),
+    sapling_service: SaplingService = Depends(get_sapling_service),
 ) -> MaturaGradeResponse:
     """Ocenia zadanie maturalne przy użyciu Gemini."""
 
@@ -236,6 +248,9 @@ def solve_matura_task(
     # Krok 2: Wywołanie API przez Service
     ai_response = ai_service.generate_content(prompt, system_instruction=system_prompt)
 
+    # Krok 2.5: Detekcja AI w odpowiedzi użytkownika
+    ai_detection_score = sapling_service.detect_ai_text(submission.user_answer)
+
     # Krok 3: Parsowanie odpowiedzi
     try:
         # Rozdzielanie po separatorach zdefiniowanych w promptcie
@@ -260,6 +275,7 @@ def solve_matura_task(
             grade=grade_val,
             feedback=feedback.strip(),
             answer_key=answer.text,  # Zwracamy klucz z bazy (pewniejszy) lub ten z AI (answer_key_ai)
+            ai_detection_score=ai_detection_score,
         )
     except (ValueError, IndexError) as e:
         print(f"Błąd parsowania odpowiedzi Matura AI: {e}")
@@ -269,4 +285,5 @@ def solve_matura_task(
             grade=0.0,
             feedback=f"Błąd parsowania odpowiedzi AI: {ai_response}",
             answer_key=answer.text,
+            ai_detection_score=ai_detection_score,
         )
