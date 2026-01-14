@@ -21,6 +21,7 @@ class _ReadingQuestionsScreenState extends State<ReadingQuestionsScreen>
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
   bool isBackendProcessing = false;
+  bool showNextButton = false;
 
   @override
   void initState() {
@@ -45,6 +46,7 @@ class _ReadingQuestionsScreenState extends State<ReadingQuestionsScreen>
   void _slideIn() {
     _slideController.reverse();
     setState(() {
+      showNextButton = true;
       isBackendProcessing = false;
     });
   }
@@ -55,20 +57,40 @@ class _ReadingQuestionsScreenState extends State<ReadingQuestionsScreen>
       title: "Zadanie z lektury",
       showDrawer: true,
       body: SingleChildScrollView(
-        child: Stack(
+        child: Column(
           children: [
-            if (isBackendProcessing)
-              const Center(child: CircularProgressIndicator()),
-            SlideTransition(
-              position: _slideAnimation,
-              child: QuestionAnswerContainer(
-                isMatura: false,
-                readingName: widget.readingName,
-                toChapter: widget.toChapter,
-                slideOut: _slideOut,
-                slideIn: _slideIn,
-              ),
+            Stack(
+              children: [
+                if (isBackendProcessing)
+                  const Center(child: CircularProgressIndicator()),
+                SlideTransition(
+                  position: _slideAnimation,
+                  child: QuestionAnswerContainer(
+                    isMatura: false,
+                    readingName: widget.readingName,
+                    toChapter: widget.toChapter,
+                    slideOut: _slideOut,
+                    slideIn: _slideIn,
+                  ),
+                ),
+              ],
             ),
+            if (showNextButton)
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReadingQuestionsScreen(
+                        readingName: widget.readingName,
+                      ),
+                    ),
+                  );
+                },
+                label: Text("Nowe zadanie"),
+                icon: Icon(Icons.arrow_forward),
+              ),
           ],
         ),
       ),

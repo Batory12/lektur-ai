@@ -211,6 +211,7 @@ class QAState extends State<QuestionAnswerContainer> {
                                   labelText: "Twoja odpowiedź",
                                 ),
                                 controller: answerInput,
+                                maxLines: null,
                               ),
                             ),
                             Row(

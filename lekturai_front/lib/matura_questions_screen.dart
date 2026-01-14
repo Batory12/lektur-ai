@@ -14,6 +14,7 @@ class _QuestionsScreenState extends State<QuestionsScreen>
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
   bool isBackendProcessing = false;
+  bool showNextButton = false;
 
   @override
   void initState() {
@@ -39,6 +40,7 @@ class _QuestionsScreenState extends State<QuestionsScreen>
     _slideController.reverse();
     setState(() {
       isBackendProcessing = false;
+      showNextButton = true;
     });
   }
 
@@ -48,18 +50,31 @@ class _QuestionsScreenState extends State<QuestionsScreen>
       title: "Zadanie z matury",
       showDrawer: true,
       body: SingleChildScrollView(
-        child: Stack(
+        child: Column(
           children: [
-            if (isBackendProcessing)
-              const Center(child: CircularProgressIndicator()),
-            SlideTransition(
-              position: _slideAnimation,
-              child: QuestionAnswerContainer(
-                isMatura: true,
-                slideOut: _slideOut,
-                slideIn: _slideIn,
-              ),
+            Stack(
+              children: [
+                if (isBackendProcessing)
+                  const Center(child: CircularProgressIndicator()),
+                SlideTransition(
+                  position: _slideAnimation,
+                  child: QuestionAnswerContainer(
+                    isMatura: true,
+                    slideOut: _slideOut,
+                    slideIn: _slideIn,
+                  ),
+                ),
+              ],
             ),
+            if (showNextButton)
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, "/zmatur");
+                },
+                label: Text("Nowe zadanie"),
+                icon: Icon(Icons.arrow_forward),
+              ),
           ],
         ),
       ),
