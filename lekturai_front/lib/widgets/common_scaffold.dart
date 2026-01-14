@@ -92,22 +92,22 @@ class CommonScaffold extends StatelessWidget {
             child: Text('Aktywności'),
           ),
           ListTile(
-            leading: Icon(Icons.today),
-            title: Text('Zadania z lektur'),
+            leading: const Icon(Icons.today),
+            title: const Text('Zadania z lektur'),
             onTap: () {
               showReadingPicker(context);
             },
           ),
           ListTile(
-            leading: Icon(Icons.tab),
-            title: Text('Zadania maturalne'),
+            leading: const Icon(Icons.tab),
+            title: const Text('Zadania maturalne'),
             onTap: () {
               Navigator.pushNamed(context, '/zmatur');
             },
           ),
           ListTile(
-            leading: Icon(Icons.edit),
-            title: Text('Asystent rozprawki'),
+            leading: const Icon(Icons.edit),
+            title: const Text('Asystent rozprawki'),
             onTap: () {
               Navigator.pushNamed(context, '/rozprawka');
             },
@@ -125,22 +125,22 @@ class CommonScaffold extends StatelessWidget {
             child: Text('Dane'),
           ),
           ListTile(
-            leading: Icon(Icons.home),
-            title: Text('Strona główna'),
+            leading: const Icon(Icons.home),
+            title: const Text('Strona główna'),
             onTap: () {
               Navigator.pushNamed(context, '/home');
             },
           ),
           ListTile(
-            leading: Icon(Icons.history),
-            title: Text('Historia odpowiedzi'),
+            leading: const Icon(Icons.history),
+            title: const Text('Historia odpowiedzi'),
             onTap: () {
               Navigator.pushNamed(context, '/historia');
             },
           ),
           ListTile(
-            leading: Icon(Icons.person),
-            title: Text('Profil'),
+            leading: const Icon(Icons.person),
+            title: const Text('Profil'),
             onTap: () {
               Navigator.pushNamed(context, '/profile');
             },
