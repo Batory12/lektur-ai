@@ -77,6 +77,8 @@ class AuthService {
         'school': null,
         'className': null,
         'notificationFrequency': 'Codziennie',
+        'notificationHour': 10,
+        'notificationMinute': 0,
         'createdAt': FieldValue.serverTimestamp(),
         'lastLoginAt': FieldValue.serverTimestamp(),
       });
@@ -110,7 +112,9 @@ class AuthService {
         if (doc.exists) {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
           String frequency = data['notificationFrequency'] ?? 'Codziennie';
-          await NotificationService().scheduleNotifications(frequency);
+          int hour = data['notificationHour'] ?? 10;
+          int minute = data['notificationMinute'] ?? 0;
+          await NotificationService().scheduleNotifications(frequency, hour: hour, minute: minute);
         }
       } catch (e) {
         print('Błąd podczas planowania powiadomień: $e');

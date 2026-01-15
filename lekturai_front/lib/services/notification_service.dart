@@ -216,7 +216,7 @@ class NotificationService {
   }
 
   // Schedule notification based on frequency
-  Future<void> scheduleNotifications(String frequency) async {
+  Future<void> scheduleNotifications(String frequency, {int hour = 10, int minute = 0}) async {
     // Cancel all existing scheduled notifications
     await cancelAllNotifications();
 
@@ -227,10 +227,10 @@ class NotificationService {
 
     // For "every 3 days", we need to schedule multiple notifications
     if (frequency == 'Co 3 dni') {
-      await _scheduleEveryThreeDaysNotifications();
+      await _scheduleEveryThreeDaysNotifications(hour: hour, minute: minute);
     } else {
       // For daily and weekly, schedule with repeat
-      DateTime nextNotification = _calculateNextNotificationTime(frequency);
+      DateTime nextNotification = _calculateNextNotificationTime(frequency, hour: hour, minute: minute);
       await _scheduleNotification(
         id: 1,
         title: 'Czas na naukę! 📚',
@@ -240,12 +240,12 @@ class NotificationService {
       );
     }
 
-    print('Notifications scheduled for frequency: $frequency');
+    print('Notifications scheduled for frequency: $frequency at $hour:${minute.toString().padLeft(2, '0')}');
   }
 
   // Schedule multiple notifications for every 3 days (up to 3 months ahead)
-  Future<void> _scheduleEveryThreeDaysNotifications() async {
-    DateTime scheduled = _getNextScheduledTime(DateTime.now());
+  Future<void> _scheduleEveryThreeDaysNotifications({int hour = 10, int minute = 0}) async {
+    DateTime scheduled = _getNextScheduledTime(DateTime.now(), hour: hour, minute: minute);
 
     // Schedule notifications every 3 days for the next 90 days (30 notifications)
     for (int i = 0; i < 30; i++) {
@@ -274,12 +274,12 @@ class NotificationService {
     print('Scheduled 30 notifications every 3 days');
   }
 
-  // Helper method to get next scheduled time at 10:00 AM
-  DateTime _getNextScheduledTime(DateTime now) {
-    DateTime scheduled = DateTime(now.year, now.month, now.day, 10, 0);
+  // Helper method to get next scheduled time at custom time
+  DateTime _getNextScheduledTime(DateTime now, {int hour = 10, int minute = 0}) {
+    DateTime scheduled = DateTime(now.year, now.month, now.day, hour, minute);
     
     // If today's time has passed, start from tomorrow
-    if (now.hour >= 10) {
+    if (now.hour > hour || (now.hour == hour && now.minute >= minute)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
     
@@ -287,17 +287,17 @@ class NotificationService {
   }
 
   // Calculate next notification time based on frequency
-  DateTime _calculateNextNotificationTime(String frequency) {
+  DateTime _calculateNextNotificationTime(String frequency, {int hour = 10, int minute = 0}) {
     DateTime now = DateTime.now();
-    DateTime scheduled = _getNextScheduledTime(now);
+    DateTime scheduled = _getNextScheduledTime(now, hour: hour, minute: minute);
 
     // Adjust based on frequency
     switch (frequency) {
       case 'Codziennie':
-        // Already set to next 10:00 AM
+        // Already set to next scheduled time
         break;
       case 'Raz w tygodniu':
-        // Schedule for next Monday at 10:00 AM
+        // Schedule for next Monday at specified time
         int daysUntilMonday = (DateTime.monday - scheduled.weekday + 7) % 7;
         if (daysUntilMonday == 0 && scheduled.isBefore(now)) {
           // If it's Monday but time has passed, schedule for next Monday
