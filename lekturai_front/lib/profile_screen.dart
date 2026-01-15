@@ -16,6 +16,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   String _notificationFrequency = 'Codziennie';
+  int _notificationHour = 10;
+  int _notificationMinute = 0;
   final List<String> _frequencies = [
     'Codziennie',
     'Co 3 dni',
@@ -47,6 +49,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _userProfile = profile;
         _notificationFrequency = profile?.notificationFrequency ?? 'Codziennie';
+        _notificationHour = profile?.notificationHour ?? 10;
+        _notificationMinute = profile?.notificationMinute ?? 0;
         _isLoading = false;
       });
     } catch (e) {
@@ -165,6 +169,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(value, style: Theme.of(context).textTheme.bodyLarge),
       ],
     );
+  }
+
+  String _getNotificationDescription(String frequency) {
+    String timeStr = '${_notificationHour.toString().padLeft(2, '0')}:${_notificationMinute.toString().padLeft(2, '0')}';
+    switch (frequency) {
+      case 'Codziennie':
+        return 'Otrzymasz przypomnienie codziennie o $timeStr';
+      case 'Co 3 dni':
+        return 'Otrzymasz przypomnienie co 3 dni o $timeStr';
+      case 'Raz w tygodniu':
+        return 'Otrzymasz przypomnienie w każdy poniedziałek o $timeStr';
+      case 'Nigdy':
+        return 'Nie będziesz otrzymywać przypomnień';
+      default:
+        return '';
+    }
+  }
+
+  Future<void> _selectNotificationTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: _notificationHour, minute: _notificationMinute),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            timePickerTheme: TimePickerThemeData(
+              backgroundColor: Colors.white,
+              hourMinuteShape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(8)),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _notificationHour = picked.hour;
+        _notificationMinute = picked.minute;
+      });
+
+      // Update in Firestore
+      ProfileUpdateResult result = await _profileService
+          .updateNotificationTime(_notificationHour, _notificationMinute);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.success
+                  ? 'Zmieniono godzinę powiadomień na: ${_notificationHour.toString().padLeft(2, '0')}:${_notificationMinute.toString().padLeft(2, '0')}'
+                  : result.error ?? 'Wystąpił błąd',
+            ),
+            backgroundColor: result.success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildPasswordSection() {
@@ -326,6 +390,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         }
                       },
                     ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _getNotificationDescription(_notificationFrequency),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Time picker for notifications
+                    if (_notificationFrequency != 'Nigdy')
+                      OutlinedButton.icon(
+                        onPressed: _selectNotificationTime,
+                        icon: const Icon(Icons.access_time),
+                        label: Text(
+                          'Zmień godzinę (${_notificationHour.toString().padLeft(2, '0')}:${_notificationMinute.toString().padLeft(2, '0')})',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 40),
                     // Logout Button
                     SizedBox(

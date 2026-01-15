@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lekturai_front/models/user_stats.dart';
 import '../models/user_profile.dart';
+import 'notification_service.dart';
 
 class ProfileService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -180,6 +181,23 @@ class ProfileService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      // Get user's notification time preference
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(currentUser!.uid)
+          .get();
+      
+      int hour = 10;
+      int minute = 0;
+      if (doc.exists) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        hour = data['notificationHour'] ?? 10;
+        minute = data['notificationMinute'] ?? 0;
+      }
+
+      // Schedule notifications based on the new frequency
+      await NotificationService().scheduleNotifications(frequency, hour: hour, minute: minute);
+
       return ProfileUpdateResult(
         success: true,
         message: 'Częstotliwość powiadomień została zaktualizowana',
@@ -188,6 +206,49 @@ class ProfileService {
       return ProfileUpdateResult(
         success: false,
         error: 'Błąd podczas aktualizacji powiadomień: $e',
+      );
+    }
+  }
+
+  // Update notification time
+  Future<ProfileUpdateResult> updateNotificationTime(int hour, int minute) async {
+    if (currentUser == null) {
+      return ProfileUpdateResult(
+        success: false,
+        error: 'Użytkownik nie jest zalogowany',
+      );
+    }
+
+    try {
+      await _firestore.collection('users').doc(currentUser!.uid).update({
+        'notificationHour': hour,
+        'notificationMinute': minute,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Get user's notification frequency preference
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(currentUser!.uid)
+          .get();
+      
+      String frequency = 'Codziennie';
+      if (doc.exists) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        frequency = data['notificationFrequency'] ?? 'Codziennie';
+      }
+
+      // Reschedule notifications with new time
+      await NotificationService().scheduleNotifications(frequency, hour: hour, minute: minute);
+
+      return ProfileUpdateResult(
+        success: true,
+        message: 'Godzina powiadomień została zaktualizowana',
+      );
+    } catch (e) {
+      return ProfileUpdateResult(
+        success: false,
+        error: 'Błąd podczas aktualizacji czasu powiadomień: $e',
       );
     }
   }

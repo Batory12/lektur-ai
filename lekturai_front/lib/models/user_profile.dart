@@ -10,6 +10,8 @@ class UserProfile {
   final String? school;
   final String? className;
   final String? notificationFrequency;
+  final int? notificationHour;
+  final int? notificationMinute;
   final DateTime? createdAt;
   final DateTime? lastLoginAt;
   final DateTime? updatedAt;
@@ -22,6 +24,8 @@ class UserProfile {
     this.school,
     this.className,
     this.notificationFrequency,
+    this.notificationHour,
+    this.notificationMinute,
     this.createdAt,
     this.lastLoginAt,
     this.updatedAt,
@@ -36,6 +40,8 @@ class UserProfile {
       school: map['school'],
       className: map['className'],
       notificationFrequency: map['notificationFrequency'] ?? 'Codziennie',
+      notificationHour: map['notificationHour'] ?? 10,
+      notificationMinute: map['notificationMinute'] ?? 0,
       createdAt: map['createdAt']?.toDate(),
       lastLoginAt: map['lastLoginAt']?.toDate(),
       updatedAt: map['updatedAt']?.toDate(),
@@ -51,6 +57,8 @@ class UserProfile {
       'school': school,
       'className': className,
       'notificationFrequency': notificationFrequency,
+      'notificationHour': notificationHour,
+      'notificationMinute': notificationMinute,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : null,
       'lastLoginAt': lastLoginAt != null ? Timestamp.fromDate(lastLoginAt!) : null,
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
