@@ -209,11 +209,14 @@ class CustomChart extends StatelessWidget {
 
     final maxValue = maxY ?? data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
     final minValue = minY ?? 0;
+    
+    // Prevent division by zero - use minimum value of 10 if maxValue is 0 or too small
+    final safeMaxValue = maxValue < 0.1 ? 10.0 : maxValue;
 
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: maxValue * 1.1, // Add 10% padding
+        maxY: safeMaxValue * 1.1, // Add 10% padding
         minY: minValue,
         barTouchData: BarTouchData(
           enabled: enableInteraction,
@@ -276,7 +279,7 @@ class CustomChart extends StatelessWidget {
         gridData: FlGridData(
           show: showGrid,
           drawVerticalLine: false,
-          horizontalInterval: maxValue / 5,
+          horizontalInterval: safeMaxValue / 5,  // Changed from maxValue to safeMaxValue
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: AppColors.border,
@@ -338,10 +341,13 @@ class CustomChart extends StatelessWidget {
 
     final maxValue = maxY ?? data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
     final minValue = minY ?? 0;
+    
+    // Prevent division by zero - use minimum value of 10 if maxValue is 0 or too small
+    final safeMaxValue = maxValue < 0.1 ? 10.0 : maxValue;
 
     return LineChart(
       LineChartData(
-        maxY: maxValue * 1.1,
+        maxY: safeMaxValue * 1.1,  // Changed from maxValue to safeMaxValue
         minY: minValue,
         lineTouchData: LineTouchData(
           enabled: enableInteraction,
@@ -404,7 +410,7 @@ class CustomChart extends StatelessWidget {
         gridData: FlGridData(
           show: showGrid,
           drawVerticalLine: false,
-          horizontalInterval: maxValue / 5,
+          horizontalInterval: safeMaxValue / 5,  // Changed from maxValue to safeMaxValue
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: AppColors.border,

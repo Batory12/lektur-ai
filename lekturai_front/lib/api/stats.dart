@@ -2,6 +2,49 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:lekturai_front/api/api_config.dart';
 
+/// Model for user stats response
+class UserStats {
+  final int currentStreak;
+  final int longestStreak;
+  final DateTime lastTaskDate;
+  final int totalTasksDone;
+  final int points;
+  final String docId;
+
+  UserStats({
+    required this.currentStreak,
+    required this.longestStreak,
+    required this.lastTaskDate,
+    required this.totalTasksDone,
+    required this.points,
+    required this.docId,
+  });
+
+  factory UserStats.fromJson(Map<String, dynamic> json) {
+    return UserStats(
+      currentStreak: json['current_streak'] ?? 0,
+      longestStreak: json['longest_streak'] ?? 0,
+      lastTaskDate: json['last_task_date'] != null 
+          ? DateTime.parse(json['last_task_date'])
+          : DateTime.now(),
+      totalTasksDone: json['total_tasks_done'] ?? 0,
+      points: json['points'] ?? 0,
+      docId: json['doc_id'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'current_streak': currentStreak,
+      'longest_streak': longestStreak,
+      'last_task_date': lastTaskDate.toIso8601String(),
+      'total_tasks_done': totalTasksDone,
+      'points': points,
+      'doc_id': docId,
+    };
+  }
+}
+
 /// Model for user daily stats response
 class UserDailyStats {
   final int points;
@@ -147,6 +190,33 @@ class StatsApi {
       return jsonList.map((json) => AvgDailyStats.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load average class daily stats: ${response.statusCode}');
+    }
+  }
+
+  /// Get user stats
+  /// 
+  /// [userId] - The user ID to get stats for
+  /// 
+  /// Returns a [UserStats] object
+  Future<UserStats> getUserStats(String userId) async {
+    final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.userStatsEndpoint}').replace(
+      queryParameters: {'user_id': userId},
+    );
+
+    ApiConfig.logRequest(
+      method: 'GET',
+      url: url.toString(),
+    );
+
+    final response = await http.get(url);
+
+    ApiConfig.logResponse(response);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> jsonData = json.decode(response.body);
+      return UserStats.fromJson(jsonData);
+    } else {
+      throw Exception('Failed to load user stats: ${response.statusCode}');
     }
   }
 }
