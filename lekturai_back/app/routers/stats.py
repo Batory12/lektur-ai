@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Query
+from typing import List
 from app.schemas import *
 from app.db_utils import db_manager
 
@@ -21,5 +22,24 @@ def get_avg_class_scores(school_name: str, city: str, class_name: str)->AvgScore
 @router.get("/user_stats", response_model=UserAllTimeStats)
 def get_user_stats(user_id: str):
     stats: UserAllTimeStats = db_manager.get_user_stats(user_id)
+
+    return stats
+
+#last ten days
+@router.get("/user_daily_stats", response_model= List[UserDailyStats])
+def get_user_daily_stats(user_id: str):
+    stats: List[UserDailyStats] = db_manager.get_last_ten_stats(user_id)
+
+    return stats
+
+@router.get("/avg_school_daily", response_model= List[AvgDailyScores])
+def get_school_avg_daily_stats(school_name: str, city: str):
+    stats: List[UserDailyStats] = db_manager.get_daily_avg(school_name, city, None)
+
+    return stats
+
+@router.get("/avg_class_daily", response_model= List[AvgDailyScores])
+def get_school_avg_daily_stats(school_name: str, city: str, class_name: str):
+    stats: List[UserDailyStats] = db_manager.get_daily_avg(school_name, city, class_name)
 
     return stats

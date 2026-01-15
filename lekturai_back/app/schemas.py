@@ -64,6 +64,12 @@ class AvgScores(BaseModel):
     avg_points: float
     avg_streak: float
 
+class UserDailyStats(BaseModel):
+    points: int
+    id: Optional[str] = Field(None, alias="doc_id")
+
+class AvgDailyScores(BaseModel):
+    avg_points: float
 
 # --- Exercises (Lektury) ---
 class ReadingExerciseGen(BaseModel):
