@@ -8,10 +8,11 @@ This document describes the implementation of push notifications for Android in 
 
 - **Firebase Cloud Messaging (FCM)** integration for push notifications
 - **Local scheduled notifications** for reminder functionality
+- **Custom notification time** - Users can choose hour and minute for notifications
 - **Four frequency options**:
-  - `Codziennie` (Daily) - Notifications at 10:00 AM every day
-  - `Co 3 dni` (Every 3 days) - Notifications at 10:00 AM every third day
-  - `Raz w tygodniu` (Weekly) - Notifications at 10:00 AM every Monday
+  - `Codziennie` (Daily) - Notifications every day
+  - `Co 3 dni` (Every 3 days) - Notifications every third day
+  - `Raz w tygodniu` (Weekly) - Notifications every Monday
   - `Nigdy` (Never) - No notifications
 
 ## Implementation Details
@@ -68,24 +69,31 @@ Location: `lib/services/notification_service.dart`
 
 1. **Daily (Codziennie)**:
    - Uses `DateTimeComponents.time` to repeat at the same time every day
-   - Scheduled for 10:00 AM
+   - Scheduled for user-selected time (default: 10:00)
 
 2. **Every 3 Days (Co 3 dni)**:
    - Schedules 30 individual notifications (covering 90 days)
    - Each notification is 3 days apart
    - When frequency changes, old notifications are cancelled and new ones scheduled
+   - Uses user-selected time
 
 3. **Weekly (Raz w tygodniu)**:
    - Uses `DateTimeComponents.dayOfWeekAndTime` to repeat weekly
-   - Scheduled for Monday at 10:00 AM
+   - Scheduled for Monday at user-selected time (default: 10:00)
 
 4. **Never (Nigdy)**:
    - Cancels all scheduled notifications
 
+5. **Custom Time Selection**:
+   - Users can choose any hour (0-23) and minute (0-59) for notifications
+   - Time picker available in profile screen
+   - Changes apply immediately to all scheduled notifications
+
 ### 5. Integration Points
 
 #### Profile Service
-- When user changes notification frequency in profile, `NotificationService().scheduleNotifications()` is called
+- When user changes notification frequency or time, `NotificationService().scheduleNotifications()` is called with custom time
+- Methods: `updateNotificationFrequency()`, `updateNotificationTime()`
 - Location: `lib/services/profile_service.dart`
 
 #### Auth Service
@@ -109,11 +117,12 @@ Location: `lib/services/notification_service.dart`
 2. Notification service initializes and requests permissions
 3. User navigates to Profile screen
 4. User selects notification frequency from dropdown
-5. When frequency is changed:
+5. User can optionally change notification time by clicking "Zmień godzinę" button
+6. When frequency or time is changed:
    - Old notifications are cancelled
-   - New notifications are scheduled based on selected frequency
+   - New notifications are scheduled based on selected frequency and time
    - User sees success message
-6. Notifications are delivered at scheduled times (10:00 AM)
+7. Notifications are delivered at scheduled times (customizable, default: 10:00)
 
 ## Testing
 
