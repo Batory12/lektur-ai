@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lekturai_front/api/stats.dart';
 import 'package:lekturai_front/widgets/custom_chart.dart';
@@ -7,7 +6,6 @@ import 'package:lekturai_front/widgets/custom_chart.dart';
 export 'package:lekturai_front/api/stats.dart' show UserStats;
 
 class StatsService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final StatsApi _statsApi = StatsApi();
 
@@ -21,7 +19,6 @@ class StatsService {
 
     try {
       final now = DateTime.now();
-      final startDate = now.subtract(Duration(days: period.days));
       
       // FIXED: Added await keyword
       final userPointsHistory = await _statsApi.getUserDailyStats(currentUser!.uid);
@@ -33,9 +30,7 @@ class StatsService {
       for (final stat in userPointsHistory) {
         // Parse the date from doc_id if it contains date information
         // Otherwise, use a sequential approach
-        final String month = stat.docId.substring(5, 7);
-        final String day = stat.docId.substring(8, 10);
-        final date = DateTime.now().subtract(Duration(days: userPointsHistory.length - 1 - counter));
+        final date = now.subtract(Duration(days: userPointsHistory.length - 1 - counter));
         final dayOfWeek = _getDayLabel(date.weekday);
         
         final label = period == TimePeriod.week
