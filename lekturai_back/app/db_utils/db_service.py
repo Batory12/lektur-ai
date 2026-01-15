@@ -1,7 +1,7 @@
 # firestore_manager.py
 
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
 import firebase_admin
@@ -32,6 +32,7 @@ class FirestoreManager:
     def __init__(self):
         self.USERS_COLLECTION = "users"
         self.STATS_COLLECTION = "user-all-time-stats"
+        self.DAILY_STATS_SUBCOLLECTION = "daily-stats"
         self.HISTORY_SUBCOLLECTION = "history"
         self.SCHOOLS_COLLECTION = "schools"
         self.EXAMS_COLLECTION = "exams"
@@ -487,6 +488,164 @@ class FirestoreManager:
         except Exception as e:
             print(f"❌ Error reading stats: {e}")
             return None
+        
+    def get_daily_stats(self, user_name: str, date_param: datetime):
+        if not self.db: return None
+        try:
+            date_id = date_param.strftime("%Y-%m-%d")
+            stats_coll = (self.db.collection(self.STATS_COLLECTION)
+                .document(user_name)
+                .collection(self.DAILY_STATS_SUBCOLLECTION))
+            doc_ref = stats_coll.document(date_id)
+            doc = doc_ref.get()
+
+            if doc.exists:
+                return UserDailyStats(**doc.to_dict(), doc_id=doc.id)
+            else:
+                new_stats = UserDailyStats(points=0)
+                doc_ref.set(new_stats.model_dump(exclude_none=True, exclude={"id"}))
+                
+                all_stats_query = stats_coll.order_by(
+                    "__name__", 
+                    direction=firestore.Query.DESCENDING
+                ).get()
+
+                if len(all_stats_query) > 10:
+                    # Documents with index 10 and above should be deleted
+                    docs_to_delete = all_stats_query[10:]
+                    for old_doc in docs_to_delete:
+                        old_doc.reference.delete()
+                    print(f"🗑️ Deleted {len(docs_to_delete)} old entries for {user_name}")
+
+                return UserDailyStats(points=0, doc_id=date_id)
+        
+        except Exception as e:
+            print(f"❌ Error reading daily stats: {e}")
+            return None
+    
+    def get_last_ten_stats(self, user_name: str) -> List[UserDailyStats]:
+        if not self.db:
+            return []
+
+        try:
+            today_date = datetime.now(timezone.utc)
+            self.get_daily_stats(user_name, today_date)
+
+            stats_coll = (self.db.collection(self.STATS_COLLECTION)
+                          .document(user_name)
+                          .collection(self.DAILY_STATS_SUBCOLLECTION))
+
+            docs = stats_coll.get()
+            
+            db_results = {doc.id: doc.to_dict().get("points", 0) for doc in docs}
+
+            final_stats: List[UserDailyStats] = []
+            
+            for i in range(10):
+                current_date = (today_date - timedelta(days=i)).strftime("%Y-%m-%d")
+                
+                points = db_results.get(current_date, 0)
+                
+                final_stats.append(
+                    UserDailyStats(points=points, doc_id=current_date)
+                )
+
+            final_stats.reverse() 
+
+            return final_stats
+
+        except Exception as e:
+            print(f"❌ Error while getting stats for {user_name}: {e}")
+            return []
+        
+    def update_daily_stats(self, user_name: str, points: int):
+        if not self.db: 
+            return None
+        
+        try:
+            date_id = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            stats_coll = (self.db.collection(self.STATS_COLLECTION)
+                        .document(user_name)
+                        .collection(self.DAILY_STATS_SUBCOLLECTION))
+            
+            doc_ref = stats_coll.document(date_id)
+
+            data = {
+                "points": firestore.Increment(points),
+            }
+            doc_ref.set(data, merge=True)
+
+            all_stats_query = stats_coll.order_by(
+                "__name__", 
+                direction=firestore.Query.DESCENDING
+            ).get()
+
+            if len(all_stats_query) > 10:
+                docs_to_delete = all_stats_query[10:]
+                for old_doc in docs_to_delete:
+                    old_doc.reference.delete()
+                print(f"🗑️ Deleted {len(docs_to_delete)} old entries for {user_name}")
+
+        except Exception as e:
+            print(f"❌ Error while updating points: {e}")
+    
+    # returns a list of dialy average points for a school/class from last ten days
+    def get_daily_avg(self, school_name: str, city: str, class_name: Optional[str]) -> List[AvgDailyScores]:
+        try:
+            
+            if class_name is None:
+                users_query = (
+                    self.db.collection(self.USERS_COLLECTION)
+                    .where("city", "==", city)
+                    .where("school", "==", school_name)
+                )
+            else:
+                users_query = (
+                    self.db.collection(self.USERS_COLLECTION)
+                    .where("city", "==", city)
+                    .where("school", "==", school_name)
+                    .where("className", "==", class_name)
+                )
+            
+            users_docs = users_query.get()
+          
+            if not users_docs:
+                return [AvgDailyScores(avg_points=0.0) for _ in range(10)]
+
+            user_ids = [doc.id for doc in users_docs]
+            num_users = len(user_ids)
+
+            today = datetime.now(timezone.utc).date()
+            date_ids = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(10)]
+            date_ids.reverse()
+
+            final_results: List[AvgDailyScores] = []
+
+            for date_id in date_ids:
+                refs = [
+                    self.db.collection(self.STATS_COLLECTION)
+                    .document(u_id)
+                    .collection(self.DAILY_STATS_SUBCOLLECTION)
+                    .document(date_id)
+                    for u_id in user_ids
+                ]
+
+                docs = self.db.get_all(refs)
+                
+                total_points_for_day = 0
+                for doc in docs:
+                    if doc.exists:
+                        total_points_for_day += doc.to_dict().get("points", 0)
+                
+                avg = float(total_points_for_day / num_users) if num_users > 0 else 0.0
+                
+                final_results.append(AvgDailyScores(avg_points=round(avg, 2)))
+
+            return final_results
+
+        except Exception as e:
+            print(f"❌ Error while calculating averages (AvgDailyScores): {e}")
+            return [AvgDailyScores(avg_points=0.0) for _ in range(10)]
 
     def avg_scores(self, school_name: str, city: str, class_name: Optional[str]):
         try:

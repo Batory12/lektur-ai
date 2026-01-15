@@ -89,7 +89,8 @@ def grade_reading_exercise(
     try:
         grade_str, feedback = ai_response.split("#GRADE_SEP#", 1)
         db_manager.update_stats_after_ex(user_id, int(float(grade_str.strip())*10))
-        db_manager.save_readings_to_history(user_id, submission, 2, feedback.strip())
+        db_manager.update_daily_stats(user_id, int(float(grade_str.strip())*10))
+        db_manager.save_readings_to_history(user_id, submission, int(float(grade_str.strip())*10), feedback.strip())
         return GradeResponse(
             grade=float(grade_str.strip()),
             feedback=feedback.strip(),
@@ -265,8 +266,9 @@ def solve_matura_task(
         grade_val = float(grade_str)
 
         db_manager.update_stats_after_ex(user_id, int(float(grade_val)*10))
+        db_manager.update_daily_stats(user_id, int(float(grade_val)*10))
         db_manager.save_matura_ex_to_history(
-            user_id, question.text, submission.user_answer, int(grade_val), feedback.strip()
+            user_id, question.text, submission.user_answer, int(float(grade_val)*10), feedback.strip()
         )
 
         return MaturaGradeResponse(
