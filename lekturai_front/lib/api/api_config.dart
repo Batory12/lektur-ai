@@ -1,10 +1,18 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class ApiConfig {
   static String get baseUrl {
-    return dotenv.env['API_BASE_URL'] ?? 'http://localhost:8000';
+    String? defaultUrl = dotenv.env['API_BASE_URL'];
+    if (defaultUrl != null && defaultUrl.isNotEmpty) {
+      return defaultUrl;
+    }
+    if (kIsWeb) {
+      return dotenv.env['API_LOCAL_BASE_URL'] ?? 'http://localhost:8000';
+    }
+    return dotenv.env['API_REMOTE_BASE_URL'] ?? 'http://localhost:8000';
   }
 
   static const String contextsEndpoint = '/find_contexts';
