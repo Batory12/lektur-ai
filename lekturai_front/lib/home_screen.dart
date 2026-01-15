@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lekturai_front/api/stats.dart';
 import 'package:lekturai_front/services/stats_service.dart';
+import 'package:lekturai_front/tools/weekdays.dart';
 import 'package:lekturai_front/widgets/common_scaffold.dart';
 import 'package:lekturai_front/widgets/custom_chart.dart';
 import 'package:lekturai_front/services/mock_data_service.dart';
@@ -18,8 +19,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<ChartDataPoint> _chartData = [];
   bool _isLoading = true;
-  double _totalPoints = 0;
-  double _averagePoints = 0;
+  double _totalPoints = 0.0;
+  int _currentStreak = 0;
   ChartDataPoint? _bestDay;
   TimePeriod _selectedPeriod = TimePeriod.week;
   ChartType _selectedChartType = ChartType.bar;
@@ -39,19 +40,28 @@ class _HomeScreenState extends State<HomeScreen> {
       final data = await StatsService().getPointsHistory(
         period: _selectedPeriod,
       );
-      final total = await MockDataService.getTotalPoints(
-        period: _selectedPeriod,
-      );
-      final average = await MockDataService.getAveragePoints(
-        period: _selectedPeriod,
-      );
-      final best = await MockDataService.getBestDay(period: _selectedPeriod);
+
+      final userStats = await StatsService().getUserStats();
+      
+      print('=== USER STATS DEBUG ===');
+      print('UserStats is null: ${userStats == null}');
+      if (userStats != null) {
+        print('Current Streak: ${userStats.currentStreak}');
+        print('Longest Streak: ${userStats.longestStreak}');
+        print('Points: ${userStats.points}');
+        print('Total Tasks Done: ${userStats.totalTasksDone}');
+        print('Last Task Date: ${userStats.lastTaskDate}');
+        print('Doc ID: ${userStats.docId}');
+      }
+      print('======================');
 
       setState(() {
         _chartData = data;
-        _totalPoints = total;
-        _averagePoints = average;
-        _bestDay = best;
+        _bestDay = data.isNotEmpty
+            ? data.reduce((a, b) => a.value >= b.value ? a : b)
+            : null;
+        _totalPoints = userStats?.points.toDouble() ?? 0.0;
+        _currentStreak = userStats?.currentStreak ?? 0;
         _isLoading = false;
       });
     } catch (e) {
@@ -245,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Expanded(
                         child: _buildStatCard(
-                          title: 'Łącznie',
+                          title: 'Łącznie Punktów',
                           value: _totalPoints.toInt().toString(),
                           icon: Icons.star,
                           color: AppColors.primary,
@@ -254,8 +264,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: _buildStatCard(
-                          title: 'Średnio/dzień',
-                          value: _averagePoints.toInt().toString(),
+                          title: 'Ilość dni nauki z rzędu',
+                          value: '$_currentStreak',
                           icon: Icons.trending_up,
                           color: AppColors.successLight,
                         ),
@@ -265,8 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: AppSpacing.md),
                   _buildStatCard(
                     title: 'Najlepszy dzień',
-                    value:
-                        '${_bestDay?.label ?? '-'}: ${_bestDay?.value.toInt() ?? 0} pkt',
+                    value: '${getFullWeekdayName(_bestDay?.label ?? '')}: ${_bestDay?.value.toInt() ?? 0} pkt',
                     icon: Icons.emoji_events,
                     color: Colors.amber,
                   ),
