@@ -24,7 +24,27 @@ flutter_local_notifications: ^18.0.1  # Local notifications
 timezone: ^0.9.4                 # Timezone support for scheduling
 ```
 
-### 2. Android Permissions (AndroidManifest.xml)
+### 2. Android Build Configuration (build.gradle.kts)
+
+Core library desugaring must be enabled for `flutter_local_notifications`:
+
+```kotlin
+android {
+    compileOptions {
+        coreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+}
+```
+
+This enables Java 8+ features on older Android versions.
+
+### 3. Android Permissions (AndroidManifest.xml)
 
 The following permissions were added:
 - `INTERNET` - For network communication
@@ -33,7 +53,7 @@ The following permissions were added:
 - `SCHEDULE_EXACT_ALARM` - For precise notification timing
 - `USE_EXACT_ALARM` - Alternative alarm permission
 
-### 3. NotificationService
+### 4. NotificationService
 
 Location: `lib/services/notification_service.dart`
 
@@ -62,7 +82,7 @@ Location: `lib/services/notification_service.dart`
 4. **Never (Nigdy)**:
    - Cancels all scheduled notifications
 
-### 4. Integration Points
+### 5. Integration Points
 
 #### Profile Service
 - When user changes notification frequency in profile, `NotificationService().scheduleNotifications()` is called
@@ -77,7 +97,7 @@ Location: `lib/services/notification_service.dart`
 - Notification service is initialized when app starts
 - Location: `lib/main.dart`
 
-### 5. Notification Content
+### 6. Notification Content
 
 **Title**: "Czas na naukę! 📚" (Time to study!)
 
