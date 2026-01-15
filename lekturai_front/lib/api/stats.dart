@@ -58,7 +58,7 @@ class StatsApi {
   /// 
   /// Returns a list of [UserDailyStats]
   Future<List<UserDailyStats>> getUserDailyStats(String userId) async {
-    final url = Uri.parse('$baseUrl/user_daily_stats').replace(
+    final url = Uri.parse(ApiConfig.userDailyStatsEndpoint).replace(
       queryParameters: {'user_id': userId},
     );
 
@@ -89,7 +89,7 @@ class StatsApi {
     required String schoolName,
     required String city,
   }) async {
-    final url = Uri.parse('$baseUrl/avg_school_daily').replace(
+    final url = Uri.parse(ApiConfig.avgSchoolDailyStatsEndpoint).replace(
       queryParameters: {
         'school_name': schoolName,
         'city': city,
@@ -125,7 +125,7 @@ class StatsApi {
     required String city,
     required String className,
   }) async {
-    final url = Uri.parse('$baseUrl/avg_class_daily').replace(
+    final url = Uri.parse(ApiConfig.avgClassDailyStatsEndpoint).replace(
       queryParameters: {
         'school_name': schoolName,
         'city': city,

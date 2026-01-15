@@ -22,6 +22,9 @@ class ApiConfig {
   static const String maturaExcerciseEndpoint = '/matura_ex';
   static const String readingsHistoryEndpoint = '/readings_history';
   static const String maturaHistoryEndpoint = '/exercise_history';
+  static const String userDailyStatsEndpoint = '/user_daily_stats';
+  static const String avgSchoolDailyStatsEndpoint = '/avg_school_daily';
+  static const String avgClassDailyStatsEndpoint = '/avg_class_daily';
 
   static String get contextsUrl => baseUrl + contextsEndpoint;
   static String urlFor(String endpoint) => baseUrl + endpoint;

@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lekturai_front/api/stats.dart';
 import 'package:lekturai_front/widgets/custom_chart.dart';
 
 class StatsService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final StatsApi _statsApi = StatsApi();
 
   User? get currentUser => _auth.currentUser;
 
@@ -17,18 +19,8 @@ class StatsService {
     try {
       final now = DateTime.now();
       final startDate = now.subtract(Duration(days: period.days));
-
-      // TODO: Replace with actual Firestore query when you have points history collection
-      // Example query:
-      // final snapshot = await _firestore
-      //     .collection('users')
-      //     .doc(currentUser!.uid)
-      //     .collection('pointsHistory')
-      //     .where('date', isGreaterThanOrEqualTo: startDate)
-      //     .orderBy('date')
-      //     .get();
-
-      // For now, return mock data
+      
+      TODO
       return _generateMockPointsData(period);
     } catch (e) {
       print('Błąd podczas pobierania historii punktów: $e');
