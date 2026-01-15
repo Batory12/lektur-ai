@@ -592,6 +592,7 @@ class FirestoreManager:
     # returns a list of dialy average points for a school/class from last ten days
     def get_daily_avg(self, school_name: str, city: str, class_name: Optional[str]) -> List[AvgDailyScores]:
         try:
+            
             if class_name is None:
                 users_query = (
                     self.db.collection(self.USERS_COLLECTION)
@@ -607,6 +608,7 @@ class FirestoreManager:
                 )
             
             users_docs = users_query.get()
+          
             if not users_docs:
                 return [AvgDailyScores(avg_points=0.0) for _ in range(10)]
 
@@ -643,7 +645,7 @@ class FirestoreManager:
 
         except Exception as e:
             print(f"❌ Error while calculating averages (AvgDailyScores): {e}")
-            return []
+            return [AvgDailyScores(avg_points=0.0) for _ in range(10)]
 
     def avg_scores(self, school_name: str, city: str, class_name: Optional[str]):
         try:
