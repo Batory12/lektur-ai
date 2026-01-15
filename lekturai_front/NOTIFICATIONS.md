@@ -31,7 +31,7 @@ Core library desugaring must be enabled for `flutter_local_notifications`:
 ```kotlin
 android {
     compileOptions {
-        coreLibraryDesugaringEnabled = true
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
