@@ -20,8 +20,39 @@ class StatsService {
       final now = DateTime.now();
       final startDate = now.subtract(Duration(days: period.days));
       
-      TODO
-      return _generateMockPointsData(period);
+      // FIXED: Added await keyword
+      final userPointsHistory = await _statsApi.getUserDailyStats(currentUser!.uid);
+      
+      // Convert UserDailyStats to ChartDataPoint
+      final chartData = <ChartDataPoint>[];
+      
+      int counter = 0;
+      for (final stat in userPointsHistory) {
+        // Parse the date from doc_id if it contains date information
+        // Otherwise, use a sequential approach
+        final String month = stat.docId.substring(5, 7);
+        final String day = stat.docId.substring(8, 10);
+        final date = DateTime.now().subtract(Duration(days: userPointsHistory.length - 1 - counter));
+        final dayOfWeek = _getDayLabel(date.weekday);
+        
+        final label = period == TimePeriod.week
+          ? dayOfWeek
+          : '${date.day}.${date.month}';
+
+        chartData.add(ChartDataPoint(
+          label: label,
+          value: 9.0,
+          date: date,
+        ));
+        counter++;
+      }
+
+      // Filter to only include the latest days from the specified period
+      final latestData = chartData.skip(chartData.length - period.days).toList();
+
+      print(latestData);
+
+      return latestData;
     } catch (e) {
       print('Błąd podczas pobierania historii punktów: $e');
       return [];

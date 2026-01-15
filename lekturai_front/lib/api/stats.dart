@@ -58,7 +58,7 @@ class StatsApi {
   /// 
   /// Returns a list of [UserDailyStats]
   Future<List<UserDailyStats>> getUserDailyStats(String userId) async {
-    final url = Uri.parse(ApiConfig.userDailyStatsEndpoint).replace(
+    final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.userDailyStatsEndpoint}').replace(
       queryParameters: {'user_id': userId},
     );
 

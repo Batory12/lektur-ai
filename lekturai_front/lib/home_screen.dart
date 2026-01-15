@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lekturai_front/api/stats.dart';
+import 'package:lekturai_front/services/stats_service.dart';
 import 'package:lekturai_front/widgets/common_scaffold.dart';
 import 'package:lekturai_front/widgets/custom_chart.dart';
 import 'package:lekturai_front/services/mock_data_service.dart';
@@ -34,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final data = await MockDataService.getPointsHistory(
+      final data = await StatsService().getPointsHistory(
         period: _selectedPeriod,
       );
       final total = await MockDataService.getTotalPoints(
