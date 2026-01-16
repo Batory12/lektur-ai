@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lekturai_front/api/stats.dart';
 import 'package:lekturai_front/services/stats_service.dart';
 import 'package:lekturai_front/tools/weekdays.dart';
 import 'package:lekturai_front/widgets/common_scaffold.dart';
 import 'package:lekturai_front/widgets/custom_chart.dart';
-import 'package:lekturai_front/services/mock_data_service.dart';
 import 'package:lekturai_front/theme/colors.dart';
 import 'package:lekturai_front/theme/spacing.dart';
 import 'package:lekturai_front/theme/text_styles.dart';
