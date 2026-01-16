@@ -46,7 +46,9 @@ class StatsService {
       }
 
       // Filter to only include the latest days from the specified period
-      final latestData = chartData.skip(chartData.length - period.days).toList();
+      final latestData = chartData.length <= period.days
+          ? chartData
+          : chartData.skip(chartData.length - period.days).toList();
 
       print(latestData);
 
@@ -147,7 +149,9 @@ class StatsService {
       }
 
       // Filter to only include the latest days from the specified period
-      final latestData = chartData.skip(chartData.length - period.days).toList();
+      final latestData = chartData.length <= period.days
+          ? chartData
+          : chartData.skip(chartData.length - period.days).toList();
 
       return latestData;
     } catch (e) {
@@ -193,7 +197,9 @@ class StatsService {
       }
 
       // Filter to only include the latest days from the specified period
-      final latestData = chartData.skip(chartData.length - period.days).toList();
+      final latestData = chartData.length <= period.days
+          ? chartData
+          : chartData.skip(chartData.length - period.days).toList();
 
       return latestData;
     } catch (e) {
