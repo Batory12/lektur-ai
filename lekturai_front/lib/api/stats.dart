@@ -132,7 +132,7 @@ class StatsApi {
     required String schoolName,
     required String city,
   }) async {
-    final url = Uri.parse(ApiConfig.avgSchoolDailyStatsEndpoint).replace(
+    final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.avgSchoolDailyStatsEndpoint}').replace(
       queryParameters: {
         'school_name': schoolName,
         'city': city,
@@ -168,7 +168,7 @@ class StatsApi {
     required String city,
     required String className,
   }) async {
-    final url = Uri.parse(ApiConfig.avgClassDailyStatsEndpoint).replace(
+    final url = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.avgClassDailyStatsEndpoint}').replace(
       queryParameters: {
         'school_name': schoolName,
         'city': city,
