@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 // Background message handler - must be top-level function
 @pragma('vm:entry-point')
@@ -32,17 +32,22 @@ class NotificationService {
     if (_initialized) return;
 
     try {
-      // Initialize timezone
-      tz.initializeTimeZones();
-      tz.setLocalLocation(tz.getLocation('Europe/Warsaw'));
+      // Skip timezone and local notifications on web
+      if (!kIsWeb) {
+        // Initialize timezone (not available on web)
+        tz.initializeTimeZones();
+        tz.setLocalLocation(tz.getLocation('Europe/Warsaw'));
+      }
 
       // Request notification permissions
       await _requestPermissions();
 
-      // Configure local notifications
-      await _configureLocalNotifications();
+      // Configure local notifications (only on mobile)
+      if (!kIsWeb) {
+        await _configureLocalNotifications();
+      }
 
-      // Configure Firebase messaging
+      // Configure Firebase messaging (works on both web and mobile)
       await _configureFirebaseMessaging();
 
       // Get and save FCM token
@@ -57,7 +62,8 @@ class NotificationService {
 
   // Request notification permissions
   Future<void> _requestPermissions() async {
-    if (Platform.isAndroid) {
+    // Skip Android-specific permissions on web
+    if (!kIsWeb) {
       // Request Android 13+ notification permission
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
           _localNotifications.resolvePlatformSpecificImplementation<
@@ -66,7 +72,7 @@ class NotificationService {
       await androidImplementation?.requestNotificationsPermission();
     }
 
-    // Request FCM permissions
+    // Request FCM permissions (works on both web and mobile)
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
@@ -122,10 +128,13 @@ class NotificationService {
     print('Received foreground message: ${message.notification?.title}');
     
     if (message.notification != null) {
-      _showLocalNotification(
-        title: message.notification!.title ?? 'Przypomnienie',
-        body: message.notification!.body ?? '',
-      );
+      // Only show local notification on mobile (web shows browser notifications automatically)
+      if (!kIsWeb) {
+        _showLocalNotification(
+          title: message.notification!.title ?? 'Przypomnienie',
+          body: message.notification!.body ?? '',
+        );
+      }
     }
   }
 
@@ -147,6 +156,12 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
+    // Skip on web - browser handles notifications
+    if (kIsWeb) {
+      print('Web notification: $title - $body');
+      return;
+    }
+
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'learning_reminders',
@@ -217,6 +232,12 @@ class NotificationService {
 
   // Schedule notification based on frequency
   Future<void> scheduleNotifications(String frequency, {int hour = 10, int minute = 0}) async {
+    // Local scheduled notifications not supported on web
+    if (kIsWeb) {
+      print('Scheduled notifications are not supported on web. Use Firebase Cloud Messaging from server.');
+      return;
+    }
+
     // Cancel all existing scheduled notifications
     await cancelAllNotifications();
 
@@ -366,6 +387,10 @@ class NotificationService {
 
   // Cancel all notifications
   Future<void> cancelAllNotifications() async {
+    if (kIsWeb) {
+      print('Cancel notifications: not supported on web');
+      return;
+    }
     await _localNotifications.cancelAll();
     print('All notifications cancelled');
   }
@@ -380,12 +405,14 @@ class NotificationService {
 
   // Get pending notification count (for debugging)
   Future<int> getPendingNotificationCount() async {
+    if (kIsWeb) return 0;
     final pending = await _localNotifications.pendingNotificationRequests();
     return pending.length;
   }
 
   // Get list of pending notifications (for debugging)
   Future<List<String>> getPendingNotificationsList() async {
+    if (kIsWeb) return ['Web platform: local scheduled notifications not supported'];
     final pending = await _localNotifications.pendingNotificationRequests();
     return pending.map((notif) => 
       'ID: ${notif.id}, Title: ${notif.title}, Body: ${notif.body}'
