@@ -267,7 +267,7 @@ class CustomChart extends StatelessWidget {
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: safeMaxValue * 1.1, // Add 10% padding
+        maxY: safeMaxValue,
         minY: minValue,
         barTouchData: BarTouchData(
           enabled: enableInteraction,
@@ -330,7 +330,7 @@ class CustomChart extends StatelessWidget {
         gridData: FlGridData(
           show: showGrid,
           drawVerticalLine: false,
-          horizontalInterval: safeMaxValue / 5,  // Changed from maxValue to safeMaxValue
+          horizontalInterval: maxValue / 5,  // Changed from maxValue to safeMaxValue
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: AppColors.border,
@@ -419,7 +419,7 @@ class CustomChart extends StatelessWidget {
 
     return LineChart(
       LineChartData(
-        maxY: safeMaxValue * 1.1,
+        maxY: safeMaxValue,
         minY: minValue,
         lineTouchData: LineTouchData(
           enabled: enableInteraction,
