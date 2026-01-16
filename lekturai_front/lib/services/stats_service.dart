@@ -46,7 +46,9 @@ class StatsService {
       }
 
       // Filter to only include the latest days from the specified period
-      final latestData = chartData.skip(chartData.length - period.days).toList();
+      final latestData = chartData.length <= period.days
+          ? chartData
+          : chartData.skip(chartData.length - period.days).toList();
 
       print(latestData);
 
@@ -109,6 +111,100 @@ class StatsService {
     } catch (e) {
       print('Błąd podczas pobierania statystyk użytkownika: $e');
       return null;
+    }
+  }
+
+  /// Get school average points over a time period
+  Future<List<ChartDataPoint>> getSchoolStats({
+    required TimePeriod period,
+    required String schoolName,
+    required String city,
+  }) async {
+    try {
+      final now = DateTime.now();
+      
+      final schoolAvgHistory = await _statsApi.getAvgSchoolDaily(
+        schoolName: schoolName,
+        city: city,
+      );
+      
+      // Convert AvgDailyStats to ChartDataPoint
+      final chartData = <ChartDataPoint>[];
+      
+      int counter = 0;
+      for (final stat in schoolAvgHistory) {
+        final date = now.subtract(Duration(days: schoolAvgHistory.length - 1 - counter));
+        final dayOfWeek = _getDayLabel(date.weekday);
+        
+        final label = period == TimePeriod.week
+          ? dayOfWeek
+          : '${date.day}.${date.month}';
+
+        chartData.add(ChartDataPoint(
+          label: label,
+          value: stat.avgPoints,
+          date: date,
+        ));
+        counter++;
+      }
+
+      // Filter to only include the latest days from the specified period
+      final latestData = chartData.length <= period.days
+          ? chartData
+          : chartData.skip(chartData.length - period.days).toList();
+
+      return latestData;
+    } catch (e) {
+      print('Błąd podczas pobierania średniej szkolnej: $e');
+      return [];
+    }
+  }
+
+  /// Get class average points over a time period
+  Future<List<ChartDataPoint>> getClassStats({
+    required TimePeriod period,
+    required String schoolName,
+    required String city,
+    required String className,
+  }) async {
+    try {
+      final now = DateTime.now();
+      
+      final classAvgHistory = await _statsApi.getAvgClassDaily(
+        schoolName: schoolName,
+        city: city,
+        className: className,
+      );
+      
+      // Convert AvgDailyStats to ChartDataPoint
+      final chartData = <ChartDataPoint>[];
+      
+      int counter = 0;
+      for (final stat in classAvgHistory) {
+        final date = now.subtract(Duration(days: classAvgHistory.length - 1 - counter));
+        final dayOfWeek = _getDayLabel(date.weekday);
+        
+        final label = period == TimePeriod.week
+          ? dayOfWeek
+          : '${date.day}.${date.month}';
+
+        chartData.add(ChartDataPoint(
+          label: label,
+          value: stat.avgPoints,
+          date: date,
+        ));
+        counter++;
+      }
+
+      // Filter to only include the latest days from the specified period
+      final latestData = chartData.length <= period.days
+          ? chartData
+          : chartData.skip(chartData.length - period.days).toList();
+
+      return latestData;
+    } catch (e) {
+      print('Błąd podczas pobierania średniej klasowej: $e');
+      return [];
     }
   }
 

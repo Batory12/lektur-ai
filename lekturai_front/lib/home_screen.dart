@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lekturai_front/services/stats_service.dart';
+import 'package:lekturai_front/services/profile_service.dart';
 import 'package:lekturai_front/tools/weekdays.dart';
 import 'package:lekturai_front/widgets/common_scaffold.dart';
 import 'package:lekturai_front/widgets/custom_chart.dart';
@@ -16,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<ChartDataPoint> _chartData = [];
+  List<ChartDataSeries> _chartSeries = [];
   bool _isLoading = true;
   double _totalPoints = 0.0;
   int _currentStreak = 0;
@@ -35,11 +37,16 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final data = await StatsService().getPointsHistory(
+      final statsService = StatsService();
+      final profileService = ProfileService();
+      
+      // Fetch user data and profile
+      final userProfile = await profileService.getUserProfile();
+      final data = await statsService.getPointsHistory(
         period: _selectedPeriod,
       );
 
-      final userStats = await StatsService().getUserStats();
+      final userStats = await statsService.getUserStats();
       
       print('=== USER STATS DEBUG ===');
       print('UserStats is null: ${userStats == null}');
@@ -53,8 +60,75 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       print('======================');
 
+      // Create series list starting with user data
+      final seriesList = <ChartDataSeries>[
+        ChartDataSeries(
+          name: 'Moje punkty',
+          data: data,
+          color: AppColors.primary,
+          showDots: true,
+          lineWidth: 3,
+        ),
+      ];
+
+      // Fetch class and school stats if profile info is available
+      if (userProfile != null && 
+          userProfile.school != null && 
+          userProfile.city != null) {
+        
+        // Fetch class average if className is available
+        if (userProfile.className != null) {
+          try {
+            final classData = await statsService.getClassStats(
+              period: _selectedPeriod,
+              schoolName: userProfile.school!,
+              city: userProfile.city!,
+              className: userProfile.className!,
+            );
+            
+            if (classData.isNotEmpty) {
+              seriesList.add(
+                ChartDataSeries(
+                  name: 'Średnia klasy',
+                  data: classData,
+                  color: Colors.orange,
+                  showDots: false,
+                  lineWidth: 2.5,
+                ),
+              );
+            }
+          } catch (e) {
+            print('Błąd podczas pobierania średniej klasowej: $e');
+          }
+        }
+        
+        // Fetch school average
+        try {
+          final schoolData = await statsService.getSchoolStats(
+            period: _selectedPeriod,
+            schoolName: userProfile.school!,
+            city: userProfile.city!,
+          );
+          
+          if (schoolData.isNotEmpty) {
+            seriesList.add(
+              ChartDataSeries(
+                name: 'Średnia szkoły',
+                data: schoolData,
+                color: Colors.green,
+                showDots: false,
+                lineWidth: 2.5,
+              ),
+            );
+          }
+        } catch (e) {
+          print('Błąd podczas pobierania średniej szkolnej: $e');
+        }
+      }
+
       setState(() {
         _chartData = data;
+        _chartSeries = seriesList;
         _bestDay = data.isNotEmpty
             ? data.reduce((a, b) => a.value >= b.value ? a : b)
             : null;
@@ -287,6 +361,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     title:
                         'Punkty zdobyte - ${_selectedPeriod.label.toLowerCase()}',
                     data: _chartData,
+                    multiSeries: _selectedChartType == ChartType.line && _chartSeries.length > 1
+                        ? _chartSeries
+                        : null,
                     chartType: _selectedChartType,
                     height: 300,
                     primaryColor: AppColors.primary,
