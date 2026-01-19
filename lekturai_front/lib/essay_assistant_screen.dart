@@ -402,6 +402,7 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
       title: 'Asystent Rozprawki',
       showDrawer: true,
       useResponsiveLayout: false,
+      useSafeArea: false, // SafeArea is applied directly to body below
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,

@@ -263,6 +263,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return CommonScaffold(
       title: 'Twój Profil',
       showDrawer: true,
+      useSafeArea: false, // SafeArea is applied directly to body below
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
