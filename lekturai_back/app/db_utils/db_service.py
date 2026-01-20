@@ -510,9 +510,9 @@ class FirestoreManager:
                     direction=firestore.Query.DESCENDING
                 ).get()
 
-                if len(all_stats_query) > 10:
-                    # Documents with index 10 and above should be deleted
-                    docs_to_delete = all_stats_query[10:]
+                if len(all_stats_query) > 30:
+                    # Documents with index 30 and above should be deleted
+                    docs_to_delete = all_stats_query[30:]
                     for old_doc in docs_to_delete:
                         old_doc.reference.delete()
                     print(f"🗑️ Deleted {len(docs_to_delete)} old entries for {user_name}")
@@ -523,7 +523,7 @@ class FirestoreManager:
             print(f"❌ Error reading daily stats: {e}")
             return None
     
-    def get_last_ten_stats(self, user_name: str) -> List[UserDailyStats]:
+    def get_last_30_stats(self, user_name: str) -> List[UserDailyStats]:
         if not self.db:
             return []
 
@@ -541,7 +541,7 @@ class FirestoreManager:
 
             final_stats: List[UserDailyStats] = []
             
-            for i in range(10):
+            for i in range(30):
                 current_date = (today_date - timedelta(days=i)).strftime("%Y-%m-%d")
                 
                 points = db_results.get(current_date, 0)
@@ -580,8 +580,8 @@ class FirestoreManager:
                 direction=firestore.Query.DESCENDING
             ).get()
 
-            if len(all_stats_query) > 10:
-                docs_to_delete = all_stats_query[10:]
+            if len(all_stats_query) > 30:
+                docs_to_delete = all_stats_query[30:]
                 for old_doc in docs_to_delete:
                     old_doc.reference.delete()
                 print(f"🗑️ Deleted {len(docs_to_delete)} old entries for {user_name}")
@@ -589,7 +589,7 @@ class FirestoreManager:
         except Exception as e:
             print(f"❌ Error while updating points: {e}")
     
-    # returns a list of dialy average points for a school/class from last ten days
+    # returns a list of dialy average points for a school/class from last 30 days
     def get_daily_avg(self, school_name: str, city: str, class_name: Optional[str]) -> List[AvgDailyScores]:
         try:
             
@@ -610,13 +610,13 @@ class FirestoreManager:
             users_docs = users_query.get()
           
             if not users_docs:
-                return [AvgDailyScores(avg_points=0.0) for _ in range(10)]
+                return [AvgDailyScores(avg_points=0.0) for _ in range(30)]
 
             user_ids = [doc.id for doc in users_docs]
             num_users = len(user_ids)
 
             today = datetime.now(timezone.utc).date()
-            date_ids = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(10)]
+            date_ids = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(30)]
             date_ids.reverse()
 
             final_results: List[AvgDailyScores] = []
@@ -645,7 +645,7 @@ class FirestoreManager:
 
         except Exception as e:
             print(f"❌ Error while calculating averages (AvgDailyScores): {e}")
-            return [AvgDailyScores(avg_points=0.0) for _ in range(10)]
+            return [AvgDailyScores(avg_points=0.0) for _ in range(30)]
 
     def avg_scores(self, school_name: str, city: str, class_name: Optional[str]):
         try:

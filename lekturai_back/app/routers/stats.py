@@ -25,10 +25,10 @@ def get_user_stats(user_id: str):
 
     return stats
 
-#last ten days
+#last 30 days
 @router.get("/user_daily_stats", response_model= List[UserDailyStats])
 def get_user_daily_stats(user_id: str):
-    stats: List[UserDailyStats] = db_manager.get_last_ten_stats(user_id)
+    stats: List[UserDailyStats] = db_manager.get_last_30_stats(user_id)
 
     return stats
 
