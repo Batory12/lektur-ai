@@ -47,19 +47,11 @@ class CommonScaffold extends StatelessWidget {
             body: Row(
               children: [
                 // Permanent drawer on the left
-                SizedBox(
-                  width: 280,
-                  child: _buildDrawerContent(context),
-                ),
+                SizedBox(width: 280, child: _buildDrawerContent(context)),
                 // Divider between drawer and content
-                const VerticalDivider(
-                  width: 1,
-                  thickness: 1,
-                ),
+                const VerticalDivider(width: 1, thickness: 1),
                 // Main content area
-                Expanded(
-                  child: bodyWidget,
-                ),
+                Expanded(child: bodyWidget),
               ],
             ),
             floatingActionButton: floatingActionButton,
@@ -78,9 +70,7 @@ class CommonScaffold extends StatelessWidget {
   }
 
   Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: _buildDrawerContent(context),
-    );
+    return Drawer(child: _buildDrawerContent(context));
   }
 
   Widget _buildDrawerContent(BuildContext context) {
@@ -159,53 +149,63 @@ void showReadingPicker(BuildContext context) {
     context: context,
     isScrollControlled: true,
     builder: (context) {
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                initialValue: selectedOption,
-                items: ['Lalka', 'Dziady, cz. 2', 'Cierpienia młodego Wertera']
-                    .map(
-                      (option) =>
-                          DropdownMenuItem(value: option, child: Text(option)),
-                    )
-                    .toList(),
-                onChanged: (value) => selectedOption = value,
-                decoration: const InputDecoration(labelText: 'Wybierz lekturę'),
-                validator: (value) => value == null ? 'Wymagane' : null,
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ReadingQuestionsScreen(
-                            readingName:
-                                selectedOption?.replaceAll(RegExp(r' '), "_") ??
-                                "Kordian",
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Wygeneruj zadanie'),
+      return SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  initialValue: selectedOption,
+                  items:
+                      ['Lalka', 'Dziady, cz. 2', 'Cierpienia młodego Wertera']
+                          .map(
+                            (option) => DropdownMenuItem(
+                              value: option,
+                              child: Text(option),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) => selectedOption = value,
+                  decoration: const InputDecoration(
+                    labelText: 'Wybierz lekturę',
+                  ),
+                  validator: (value) => value == null ? 'Wymagane' : null,
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      if (formKey.currentState!.validate()) {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ReadingQuestionsScreen(
+                              readingName:
+                                  selectedOption?.replaceAll(
+                                    RegExp(r' '),
+                                    "_",
+                                  ) ??
+                                  "Kordian",
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text('Wygeneruj zadanie'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
