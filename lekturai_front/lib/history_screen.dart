@@ -96,7 +96,7 @@ class HistoryScreenState extends State<HistoryScreen> {
           Column(
             children: [
               const Divider(
-                height: 20,
+                height: 40,
                 thickness: 1,
                 color: Colors.grey,
                 indent: 10,
@@ -131,7 +131,7 @@ class HistoryScreenState extends State<HistoryScreen> {
         Column(
           children: [
             const Divider(
-              height: 20,
+              height: 40,
               thickness: 1,
               color: Colors.grey,
               indent: 10,
@@ -165,7 +165,7 @@ class HistoryScreenState extends State<HistoryScreen> {
         Column(
           children: [
             const Divider(
-              height: 20,
+              height: 40,
               thickness: 1,
               color: Colors.grey,
               indent: 10,
@@ -199,7 +199,7 @@ class HistoryScreenState extends State<HistoryScreen> {
         Column(
           children: [
             const Divider(
-              height: 20,
+              height: 40,
               thickness: 1,
               color: Colors.grey,
               indent: 10,
