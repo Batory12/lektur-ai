@@ -6,6 +6,8 @@ import 'package:lekturai_front/theme/text_styles.dart';
 import 'package:lekturai_front/widgets/qa_card.dart';
 import 'package:lekturai_front/widgets/text_or_loading.dart';
 
+const double aiSzpontThreshold = 0.8;
+
 class QuestionAnswerContainer extends StatefulWidget {
   final String? questionTitle;
   final String? questionText;
@@ -65,6 +67,8 @@ class QAState extends State<QuestionAnswerContainer> {
   List<AuxilaryRead>? reads;
   String? answerKey;
 
+  double? aiDetectionScore;
+
   final TextEditingController answerInput = TextEditingController();
 
   Future<void> loadQuestion() async {
@@ -89,15 +93,12 @@ class QAState extends State<QuestionAnswerContainer> {
         questionTitle == null) {
       throw Exception("no question loaded!");
     }
-    setState(() {
-      answerText = newAnswer;
-      evaluationText = "";
-    });
     if (isMatura) {
       final submit = MaturaSubmit(answer: newAnswer, id: questionId!);
       final grade = await api.submitMaturaExercise(submit, uid!);
       answerKey = grade.answerKey;
       setState(() {
+        answerText = newAnswer;
         evaluationText = grade.feedback;
         evaluationTitle = "Ocena: ${grade.grade}";
         evalTextLoading = false;
@@ -111,10 +112,12 @@ class QAState extends State<QuestionAnswerContainer> {
       );
       final grade = await api.submitReadingExercise(submit, uid!);
       setState(() {
+        answerText = newAnswer;
         evaluationText = grade.feedback;
         evaluationTitle = "Ocena: ${grade.grade}";
         evalTextLoading = false;
         evalTitleLoading = false;
+        aiDetectionScore = grade.aiDetectionScore;
       });
     }
     if (widget.slideIn != null) widget.slideIn!();
@@ -177,6 +180,15 @@ class QAState extends State<QuestionAnswerContainer> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              if (aiDetectionScore != null &&
+                                  aiDetectionScore! >= aiSzpontThreshold)
+                                IconButton.filled(
+                                  color: AppColors.errorLight,
+                                  onPressed: () {
+                                    showSzpontWarning(context);
+                                  },
+                                  icon: Icon(Icons.warning_amber_sharp),
+                                ),
                               if (answerKey != null && answerKey!.isNotEmpty)
                                 IconButton(
                                   onPressed: () {
@@ -344,6 +356,28 @@ void showTextDialog(BuildContext context, String answerKey) {
             child: const Text('Wróć'),
           ),
         ],
+      );
+    },
+  );
+}
+
+void showSzpontWarning(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Odpowiedź może być wygenerowana przez AI!'),
+        content: const Text(
+          'Wykryto wysokie prawdopodobieństwo, że twoja odpowiedź została wygenerowana przez AI. Punkty za tą odpowiedź nie zostaną przyznane.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Wróć'),
+          ),
+        ],
+        backgroundColor: AppColors.error,
+        icon: Icon(Icons.warning_amber_sharp),
       );
     },
   );

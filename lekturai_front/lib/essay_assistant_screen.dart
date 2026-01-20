@@ -418,7 +418,7 @@ class _EssayAssistantScreenState extends State<EssayAssistantScreen> {
                   const SizedBox(height: AppSpacing.sectionSpacing),
                   _buildGenerateButton(),
                   const SizedBox(height: AppSpacing.sm),
-                  _buildDebugButtons(),
+                  // _buildDebugButtons(), DON'T SHOW DEBUG BUTTONS FOR NOW
                   _buildGeneratedContexts(),
                   // Add extra bottom padding to ensure content is always visible
                   SizedBox(

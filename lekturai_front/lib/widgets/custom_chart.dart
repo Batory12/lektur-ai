@@ -37,6 +37,23 @@ class ChartDataPoint {
   });
 }
 
+/// Data series for multi-line charts
+class ChartDataSeries {
+  final String name; // e.g., "Moje punkty", "Średnia klasy"
+  final List<ChartDataPoint> data;
+  final Color color;
+  final bool showDots;
+  final double lineWidth;
+
+  ChartDataSeries({
+    required this.name,
+    required this.data,
+    required this.color,
+    this.showDots = true,
+    this.lineWidth = 3,
+  });
+}
+
 /// Custom Chart Widget that can display bar, line, or pie charts
 class CustomChart extends StatelessWidget {
   /// Chart title
@@ -44,6 +61,9 @@ class CustomChart extends StatelessWidget {
 
   /// Chart data points
   final List<ChartDataPoint> data;
+
+  /// Multiple data series for multi-line charts (optional)
+  final List<ChartDataSeries>? multiSeries;
 
   /// Type of chart to display
   final ChartType chartType;
@@ -103,6 +123,7 @@ class CustomChart extends StatelessWidget {
     super.key,
     required this.title,
     required this.data,
+    this.multiSeries,
     this.chartType = ChartType.bar,
     this.primaryColor = AppColors.primary,
     this.secondaryColor,
@@ -141,6 +162,36 @@ class CustomChart extends StatelessWidget {
               title,
               style: AppTextStyles.heading3,
             ),
+            
+            // Legend for multi-series charts
+            if (multiSeries != null && multiSeries!.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.md),
+              Wrap(
+                spacing: AppSpacing.md,
+                runSpacing: AppSpacing.xs,
+                children: multiSeries!.map((series) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: series.color,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        series.name,
+                        style: AppTextStyles.bodySmall,
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ],
+            
             const SizedBox(height: AppSpacing.lg),
 
             // Chart
@@ -209,11 +260,14 @@ class CustomChart extends StatelessWidget {
 
     final maxValue = maxY ?? data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
     final minValue = minY ?? 0;
+    
+    // Prevent division by zero - use minimum value of 10 if maxValue is 0 or too small
+    final safeMaxValue = maxValue < 0.1 ? 10.0 : maxValue;
 
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
-        maxY: maxValue * 1.1, // Add 10% padding
+        maxY: safeMaxValue,
         minY: minValue,
         barTouchData: BarTouchData(
           enabled: enableInteraction,
@@ -276,7 +330,7 @@ class CustomChart extends StatelessWidget {
         gridData: FlGridData(
           show: showGrid,
           drawVerticalLine: false,
-          horizontalInterval: maxValue / 5,
+          horizontalInterval: maxValue / 5,  // Changed from maxValue to safeMaxValue
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: AppColors.border,
@@ -324,8 +378,19 @@ class CustomChart extends StatelessWidget {
   }
 
   Widget _buildLineChart() {
+    // Use multiSeries if provided, otherwise use single data series
+    final seriesList = multiSeries ?? [
+      ChartDataSeries(
+        name: 'Data',
+        data: data,
+        color: primaryColor,
+        showDots: showDots,
+        lineWidth: 3,
+      ),
+    ];
+    
     // Safety check: ensure we have data
-    if (data.isEmpty) {
+    if (seriesList.isEmpty || seriesList.every((s) => s.data.isEmpty)) {
       return Center(
         child: Text(
           'Brak danych do wyświetlenia',
@@ -336,26 +401,47 @@ class CustomChart extends StatelessWidget {
       );
     }
 
-    final maxValue = maxY ?? data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    // Find max and min values across all series
+    final allValues = seriesList
+        .expand((series) => series.data.map((point) => point.value))
+        .toList();
+    
+    final maxValue = maxY ?? (allValues.isNotEmpty 
+        ? allValues.reduce((a, b) => a > b ? a : b) 
+        : 10.0);
     final minValue = minY ?? 0;
+    
+    // Prevent division by zero - use minimum value of 10 if maxValue is 0 or too small
+    final safeMaxValue = maxValue < 0.1 ? 10.0 : maxValue;
+
+    // Use the first series for labels (assuming all series have same labels)
+    final labelData = seriesList.first.data;
 
     return LineChart(
       LineChartData(
-        maxY: maxValue * 1.1,
+        maxY: safeMaxValue,
         minY: minValue,
         lineTouchData: LineTouchData(
           enabled: enableInteraction,
           touchTooltipData: LineTouchTooltipData(
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
-                final index = spot.x.toInt();
-                // Safety check: ensure index is within bounds
-                if (index < 0 || index >= data.length) {
+                final seriesIndex = spot.barIndex;
+                final pointIndex = spot.x.toInt();
+                
+                // Safety check: ensure indices are within bounds
+                if (seriesIndex < 0 || seriesIndex >= seriesList.length) {
                   return null;
                 }
-                final dataPoint = data[index];
-                final tooltipText = tooltipBuilder?.call(dataPoint) ??
-                    '${dataPoint.label}\n${dataPoint.value.toStringAsFixed(0)}';
+                
+                final series = seriesList[seriesIndex];
+                if (pointIndex < 0 || pointIndex >= series.data.length) {
+                  return null;
+                }
+                
+                final dataPoint = series.data[pointIndex];
+                final tooltipText = '${series.name}\n${dataPoint.label}\n${dataPoint.value.toStringAsFixed(1)}';
+                
                 return LineTooltipItem(
                   tooltipText,
                   AppTextStyles.bodySmall.copyWith(color: AppColors.white),
@@ -369,17 +455,17 @@ class CustomChart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: data.length > 10 ? (data.length / 7).ceilToDouble() : 1,
+              interval: labelData.length > 10 ? (labelData.length / 7).ceilToDouble() : 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 // Safety check: ensure index is within bounds
-                if (index < 0 || index >= data.length) {
+                if (index < 0 || index >= labelData.length) {
                   return const SizedBox.shrink();
                 }
                 return Padding(
                   padding: const EdgeInsets.only(top: AppSpacing.xs),
                   child: Text(
-                    data[index].label,
+                    labelData[index].label,
                     style: AppTextStyles.bodySmall,
                   ),
                 );
@@ -404,7 +490,7 @@ class CustomChart extends StatelessWidget {
         gridData: FlGridData(
           show: showGrid,
           drawVerticalLine: false,
-          horizontalInterval: maxValue / 5,
+          horizontalInterval: safeMaxValue / 5,
           getDrawingHorizontalLine: (value) {
             return FlLine(
               color: AppColors.border,
@@ -419,29 +505,29 @@ class CustomChart extends StatelessWidget {
             left: BorderSide(color: AppColors.border, width: 1),
           ),
         ),
-        lineBarsData: [
-          LineChartBarData(
-            spots: data.asMap().entries.map((entry) {
+        lineBarsData: seriesList.map((series) {
+          return LineChartBarData(
+            spots: series.data.asMap().entries.map((entry) {
               return FlSpot(entry.key.toDouble(), entry.value.value);
             }).toList(),
             isCurved: curvedLine,
-            color: primaryColor,
-            barWidth: 3,
+            color: series.color,
+            barWidth: series.lineWidth,
             isStrokeCapRound: true,
-            dotData: FlDotData(show: showDots),
+            dotData: FlDotData(show: series.showDots),
             belowBarData: BarAreaData(
-              show: fillUnderLine,
+              show: fillUnderLine && seriesList.length == 1, // Only fill for single series
               gradient: LinearGradient(
                 colors: [
-                  primaryColor.withOpacity(0.3),
-                  primaryColor.withOpacity(0.0),
+                  series.color.withOpacity(0.3),
+                  series.color.withOpacity(0.0),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
             ),
-          ),
-        ],
+          );
+        }).toList(),
       ),
       duration: enableAnimation
           ? const Duration(milliseconds: 300)

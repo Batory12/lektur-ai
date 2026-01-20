@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lekturai_front/services/stats_service.dart';
+import 'package:lekturai_front/services/profile_service.dart';
+import 'package:lekturai_front/tools/weekdays.dart';
 import 'package:lekturai_front/widgets/common_scaffold.dart';
 import 'package:lekturai_front/widgets/custom_chart.dart';
-import 'package:lekturai_front/services/mock_data_service.dart';
 import 'package:lekturai_front/theme/colors.dart';
 import 'package:lekturai_front/theme/spacing.dart';
 import 'package:lekturai_front/theme/text_styles.dart';
@@ -15,9 +17,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<ChartDataPoint> _chartData = [];
+  List<ChartDataSeries> _chartSeries = [];
   bool _isLoading = true;
-  double _totalPoints = 0;
-  double _averagePoints = 0;
+  double _totalPoints = 0.0;
+  int _currentStreak = 0;
   ChartDataPoint? _bestDay;
   TimePeriod _selectedPeriod = TimePeriod.week;
   ChartType _selectedChartType = ChartType.bar;
@@ -34,22 +37,103 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final data = await MockDataService.getPointsHistory(
+      final statsService = StatsService();
+      final profileService = ProfileService();
+      
+      // Fetch user data and profile
+      final userProfile = await profileService.getUserProfile();
+      final data = await statsService.getPointsHistory(
         period: _selectedPeriod,
       );
-      final total = await MockDataService.getTotalPoints(
-        period: _selectedPeriod,
-      );
-      final average = await MockDataService.getAveragePoints(
-        period: _selectedPeriod,
-      );
-      final best = await MockDataService.getBestDay(period: _selectedPeriod);
+
+      final userStats = await statsService.getUserStats();
+      
+      print('=== USER STATS DEBUG ===');
+      print('UserStats is null: ${userStats == null}');
+      if (userStats != null) {
+        print('Current Streak: ${userStats.currentStreak}');
+        print('Longest Streak: ${userStats.longestStreak}');
+        print('Points: ${userStats.points}');
+        print('Total Tasks Done: ${userStats.totalTasksDone}');
+        print('Last Task Date: ${userStats.lastTaskDate}');
+        print('Doc ID: ${userStats.docId}');
+      }
+      print('======================');
+
+      // Create series list starting with user data
+      final seriesList = <ChartDataSeries>[
+        ChartDataSeries(
+          name: 'Moje punkty',
+          data: data,
+          color: AppColors.primary,
+          showDots: true,
+          lineWidth: 3,
+        ),
+      ];
+
+      // Fetch class and school stats if profile info is available
+      if (userProfile != null && 
+          userProfile.school != null && 
+          userProfile.city != null) {
+        
+        // Fetch class average if className is available
+        if (userProfile.className != null) {
+          try {
+            final classData = await statsService.getClassStats(
+              period: _selectedPeriod,
+              schoolName: userProfile.school!,
+              city: userProfile.city!,
+              className: userProfile.className!,
+            );
+            
+            if (classData.isNotEmpty) {
+              seriesList.add(
+                ChartDataSeries(
+                  name: 'Średnia klasy',
+                  data: classData,
+                  color: Colors.orange,
+                  showDots: false,
+                  lineWidth: 2.5,
+                ),
+              );
+            }
+          } catch (e) {
+            print('Błąd podczas pobierania średniej klasowej: $e');
+          }
+        }
+        
+        // Fetch school average
+        try {
+          final schoolData = await statsService.getSchoolStats(
+            period: _selectedPeriod,
+            schoolName: userProfile.school!,
+            city: userProfile.city!,
+          );
+          
+          if (schoolData.isNotEmpty) {
+            seriesList.add(
+              ChartDataSeries(
+                name: 'Średnia szkoły',
+                data: schoolData,
+                color: Colors.green,
+                showDots: false,
+                lineWidth: 2.5,
+              ),
+            );
+          }
+        } catch (e) {
+          print('Błąd podczas pobierania średniej szkolnej: $e');
+        }
+      }
 
       setState(() {
         _chartData = data;
-        _totalPoints = total;
-        _averagePoints = average;
-        _bestDay = best;
+        _chartSeries = seriesList;
+        _bestDay = data.isNotEmpty
+            ? data.reduce((a, b) => a.value >= b.value ? a : b)
+            : null;
+        _totalPoints = userStats?.points.toDouble() ?? 0.0;
+        _currentStreak = userStats?.currentStreak ?? 0;
         _isLoading = false;
       });
     } catch (e) {
@@ -243,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Expanded(
                         child: _buildStatCard(
-                          title: 'Łącznie',
+                          title: 'Łącznie Punktów',
                           value: _totalPoints.toInt().toString(),
                           icon: Icons.star,
                           color: AppColors.primary,
@@ -252,8 +336,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: _buildStatCard(
-                          title: 'Średnio/dzień',
-                          value: _averagePoints.toInt().toString(),
+                          title: 'Ilość dni nauki z rzędu',
+                          value: '$_currentStreak',
                           icon: Icons.trending_up,
                           color: AppColors.successLight,
                         ),
@@ -263,8 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: AppSpacing.md),
                   _buildStatCard(
                     title: 'Najlepszy dzień',
-                    value:
-                        '${_bestDay?.label ?? '-'}: ${_bestDay?.value.toInt() ?? 0} pkt',
+                    value: '${getFullWeekdayName(_bestDay?.label ?? '')}: ${_bestDay?.value.toInt() ?? 0} pkt',
                     icon: Icons.emoji_events,
                     color: Colors.amber,
                   ),
@@ -278,6 +361,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     title:
                         'Punkty zdobyte - ${_selectedPeriod.label.toLowerCase()}',
                     data: _chartData,
+                    multiSeries: _selectedChartType == ChartType.line && _chartSeries.length > 1
+                        ? _chartSeries
+                        : null,
                     chartType: _selectedChartType,
                     height: 300,
                     primaryColor: AppColors.primary,

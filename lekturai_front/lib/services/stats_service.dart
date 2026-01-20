@@ -1,10 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lekturai_front/api/stats.dart';
 import 'package:lekturai_front/widgets/custom_chart.dart';
 
+// Export UserStats for easy access
+export 'package:lekturai_front/api/stats.dart' show UserStats;
+
 class StatsService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final StatsApi _statsApi = StatsApi();
 
   User? get currentUser => _auth.currentUser;
 
@@ -16,49 +19,44 @@ class StatsService {
 
     try {
       final now = DateTime.now();
-      final startDate = now.subtract(Duration(days: period.days));
+      
+      // FIXED: Added await keyword
+      final userPointsHistory = await _statsApi.getUserDailyStats(currentUser!.uid);
+      
+      // Convert UserDailyStats to ChartDataPoint
+      final chartData = <ChartDataPoint>[];
+      
+      int counter = 0;
+      for (final stat in userPointsHistory) {
+        // Parse the date from doc_id if it contains date information
+        // Otherwise, use a sequential approach
+        final date = now.subtract(Duration(days: userPointsHistory.length - 1 - counter));
+        final dayOfWeek = _getDayLabel(date.weekday);
+        
+        final label = period == TimePeriod.week
+          ? dayOfWeek
+          : '${date.day}.${date.month}';
 
-      // TODO: Replace with actual Firestore query when you have points history collection
-      // Example query:
-      // final snapshot = await _firestore
-      //     .collection('users')
-      //     .doc(currentUser!.uid)
-      //     .collection('pointsHistory')
-      //     .where('date', isGreaterThanOrEqualTo: startDate)
-      //     .orderBy('date')
-      //     .get();
+        chartData.add(ChartDataPoint(
+          label: label,
+          value: stat.points.toDouble(),
+          date: date,
+        ));
+        counter++;
+      }
 
-      // For now, return mock data
-      return _generateMockPointsData(period);
+      // Filter to only include the latest days from the specified period
+      final latestData = chartData.length <= period.days
+          ? chartData
+          : chartData.skip(chartData.length - period.days).toList();
+
+      print(latestData);
+
+      return latestData;
     } catch (e) {
       print('Błąd podczas pobierania historii punktów: $e');
       return [];
     }
-  }
-
-  /// Generate mock data for testing
-  List<ChartDataPoint> _generateMockPointsData(TimePeriod period) {
-    final now = DateTime.now();
-    final data = <ChartDataPoint>[];
-
-    for (int i = period.days - 1; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i));
-      final dayOfWeek = _getDayLabel(date.weekday);
-      final label = period == TimePeriod.week
-          ? dayOfWeek
-          : '${date.day}.${date.month}';
-
-      // Generate random points (replace with actual data)
-      final points = (i % 3 == 0) ? (20 + (i % 5) * 10).toDouble() : (10 + (i % 7) * 5).toDouble();
-
-      data.add(ChartDataPoint(
-        label: label,
-        value: points,
-        date: date,
-      ));
-    }
-
-    return data;
   }
 
   String _getDayLabel(int weekday) {
@@ -79,31 +77,6 @@ class StatsService {
         return 'Nd';
       default:
         return '';
-    }
-  }
-
-  /// Get activity breakdown (for pie chart)
-  Future<List<ChartDataPoint>> getActivityBreakdown() async {
-    if (currentUser == null) return [];
-
-    try {
-      // TODO: Replace with actual Firestore query
-      // Example:
-      // final snapshot = await _firestore
-      //     .collection('users')
-      //     .doc(currentUser!.uid)
-      //     .collection('activities')
-      //     .get();
-
-      // For now, return mock data
-      return [
-        ChartDataPoint(label: 'Lektury', value: 45),
-        ChartDataPoint(label: 'Matura', value: 30),
-        ChartDataPoint(label: 'Rozprawki', value: 25),
-      ];
-    } catch (e) {
-      print('Błąd podczas pobierania podziału aktywności: $e');
-      return [];
     }
   }
 
@@ -128,53 +101,111 @@ class StatsService {
     return cumulativeData;
   }
 
-  /// Get comparison data (current vs previous period)
-  Future<Map<String, List<ChartDataPoint>>> getComparisonData({
-    required TimePeriod period,
-  }) async {
-    if (currentUser == null) return {};
+  /// Get user statistics (streaks, total tasks, points, etc.)
+  Future<UserStats?> getUserStats() async {
+    if (currentUser == null) return null;
 
     try {
-      final now = DateTime.now();
-      final currentStart = now.subtract(Duration(days: period.days));
-      final previousStart = currentStart.subtract(Duration(days: period.days));
-
-      // TODO: Implement actual Firestore queries for both periods
-      // For now, return mock data
-      final currentData = await getPointsHistory(period: period);
-      final previousData = _generateMockPreviousPeriodData(period);
-
-      return {
-        'current': currentData,
-        'previous': previousData,
-      };
+      final userStats = await _statsApi.getUserStats(currentUser!.uid);
+      return userStats;
     } catch (e) {
-      print('Błąd podczas pobierania danych porównawczych: $e');
-      return {};
+      print('Błąd podczas pobierania statystyk użytkownika: $e');
+      return null;
     }
   }
 
-  List<ChartDataPoint> _generateMockPreviousPeriodData(TimePeriod period) {
-    final now = DateTime.now();
-    final data = <ChartDataPoint>[];
-
-    for (int i = period.days - 1; i >= 0; i--) {
-      final date = now.subtract(Duration(days: i + period.days));
-      final dayOfWeek = _getDayLabel(date.weekday);
-      final label = period == TimePeriod.week
+  /// Get school average points over a time period
+  Future<List<ChartDataPoint>> getSchoolStats({
+    required TimePeriod period,
+    required String schoolName,
+    required String city,
+  }) async {
+    try {
+      final now = DateTime.now();
+      
+      final schoolAvgHistory = await _statsApi.getAvgSchoolDaily(
+        schoolName: schoolName,
+        city: city,
+      );
+      
+      // Convert AvgDailyStats to ChartDataPoint
+      final chartData = <ChartDataPoint>[];
+      
+      int counter = 0;
+      for (final stat in schoolAvgHistory) {
+        final date = now.subtract(Duration(days: schoolAvgHistory.length - 1 - counter));
+        final dayOfWeek = _getDayLabel(date.weekday);
+        
+        final label = period == TimePeriod.week
           ? dayOfWeek
           : '${date.day}.${date.month}';
 
-      // Generate slightly lower random points for previous period
-      final points = (i % 3 == 0) ? (15 + (i % 5) * 8).toDouble() : (8 + (i % 7) * 4).toDouble();
+        chartData.add(ChartDataPoint(
+          label: label,
+          value: stat.avgPoints,
+          date: date,
+        ));
+        counter++;
+      }
 
-      data.add(ChartDataPoint(
-        label: label,
-        value: points,
-        date: date,
-      ));
+      // Filter to only include the latest days from the specified period
+      final latestData = chartData.length <= period.days
+          ? chartData
+          : chartData.skip(chartData.length - period.days).toList();
+
+      return latestData;
+    } catch (e) {
+      print('Błąd podczas pobierania średniej szkolnej: $e');
+      return [];
     }
-
-    return data;
   }
+
+  /// Get class average points over a time period
+  Future<List<ChartDataPoint>> getClassStats({
+    required TimePeriod period,
+    required String schoolName,
+    required String city,
+    required String className,
+  }) async {
+    try {
+      final now = DateTime.now();
+      
+      final classAvgHistory = await _statsApi.getAvgClassDaily(
+        schoolName: schoolName,
+        city: city,
+        className: className,
+      );
+      
+      // Convert AvgDailyStats to ChartDataPoint
+      final chartData = <ChartDataPoint>[];
+      
+      int counter = 0;
+      for (final stat in classAvgHistory) {
+        final date = now.subtract(Duration(days: classAvgHistory.length - 1 - counter));
+        final dayOfWeek = _getDayLabel(date.weekday);
+        
+        final label = period == TimePeriod.week
+          ? dayOfWeek
+          : '${date.day}.${date.month}';
+
+        chartData.add(ChartDataPoint(
+          label: label,
+          value: stat.avgPoints,
+          date: date,
+        ));
+        counter++;
+      }
+
+      // Filter to only include the latest days from the specified period
+      final latestData = chartData.length <= period.days
+          ? chartData
+          : chartData.skip(chartData.length - period.days).toList();
+
+      return latestData;
+    } catch (e) {
+      print('Błąd podczas pobierania średniej klasowej: $e');
+      return [];
+    }
+  }
+
 }
