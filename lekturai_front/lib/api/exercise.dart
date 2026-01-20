@@ -114,18 +114,28 @@ class MaturaSubmit {
 class ReadingGradeResponse {
   final double grade;
   final String feedback;
+  final double? aiDetectionScore;
 
-  ReadingGradeResponse({required this.grade, required this.feedback});
+  ReadingGradeResponse({
+    required this.grade,
+    required this.feedback,
+    this.aiDetectionScore,
+  });
 
   factory ReadingGradeResponse.fromJson(Map<String, dynamic> json) {
     return ReadingGradeResponse(
       grade: json['grade'],
       feedback: json['feedback'],
+      aiDetectionScore: json['ai_detection_score'],
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'grade': grade, 'feedback': feedback};
+    return {
+      'grade': grade,
+      'feedback': feedback,
+      'ai_detection_score': aiDetectionScore,
+    };
   }
 }
 
@@ -134,12 +144,14 @@ class MaturaGradeResponse {
   final double grade;
   final String feedback;
   final String answerKey;
+  final double? aiDetectionScore;
 
   MaturaGradeResponse({
     required this.exerciseId,
     required this.grade,
     required this.feedback,
     required this.answerKey,
+    this.aiDetectionScore,
   });
 
   factory MaturaGradeResponse.fromJson(Map<String, dynamic> json) {
@@ -148,6 +160,7 @@ class MaturaGradeResponse {
       grade: json['grade'],
       feedback: json['feedback'],
       answerKey: json['answer_key'],
+      aiDetectionScore: json['ai_detection_score'],
     );
   }
 
@@ -157,6 +170,7 @@ class MaturaGradeResponse {
       'feedback': feedback,
       'excercise_id': exerciseId,
       'answer_key': answerKey,
+      'ai_detection_score': aiDetectionScore,
     };
   }
 }
