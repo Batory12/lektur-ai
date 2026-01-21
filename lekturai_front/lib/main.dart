@@ -7,29 +7,14 @@ import 'package:lekturai_front/matura_questions_screen.dart';
 import 'package:lekturai_front/reading_question_screen.dart';
 import 'package:lekturai_front/register_screen.dart';
 import 'package:lekturai_front/widgets/auth_wrapper.dart';
+import 'package:lekturai_front/widgets/loading_screen.dart';
 import 'package:lekturai_front/services/notification_service.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'essay_assistant_screen.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Load environment variables (optional - don't crash if file doesn't exist)
-  try {
-    await dotenv.load(fileName: "assets/.env");
-  } catch (e) {
-    print('Warning: Could not load .env file: $e');
-    // Continue without .env file - will use defaults
-  }
-
-  // Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // Initialize notification service
-  await NotificationService().initialize();
-
+void main() {
   runApp(const MyApp());
 }
 
@@ -39,7 +24,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Lektur.AI',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -95,7 +81,8 @@ class MyApp extends StatelessWidget {
       ),
       // Define routes
       routes: {
-        '/': (context) => const AuthWrapper(),
+        '/': (context) => const AppInitializer(),
+        '/auth': (context) => const AuthWrapper(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
@@ -107,6 +94,91 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
       },
       initialRoute: '/',
+    );
+  }
+}
+
+/// Handles app initialization with beautiful loading screen
+class AppInitializer extends StatefulWidget {
+  const AppInitializer({super.key});
+
+  @override
+  State<AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<AppInitializer> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    try {
+      // Ensure Flutter is initialized
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // Load environment variables (optional - don't crash if file doesn't exist)
+      try {
+        await dotenv.load(fileName: "assets/.env");
+        print('✓ Environment variables loaded');
+      } catch (e) {
+        print('Warning: Could not load .env file: $e');
+        // Continue without .env file - will use defaults
+      }
+
+      // Initialize Firebase
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      print('✓ Firebase initialized');
+
+      // Initialize notification service
+      await NotificationService().initialize();
+      print('✓ Notifications initialized');
+
+      // Add a minimum delay for smooth experience
+      await Future.delayed(const Duration(milliseconds: 1500));
+
+      // Navigate to auth wrapper
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/auth');
+      }
+    } catch (e) {
+      print('Error initializing app: $e');
+      // Show error and retry option
+      if (mounted) {
+        _showInitializationError(e.toString());
+      }
+    }
+  }
+
+  void _showInitializationError(String error) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Błąd inicjalizacji'),
+        content: Text(
+          'Nie udało się zainicjalizować aplikacji:\n\n$error',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _initializeApp(); // Retry
+            },
+            child: const Text('Spróbuj ponownie'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const LoadingScreen(
+      message: 'Inicjalizacja aplikacji...',
     );
   }
 }

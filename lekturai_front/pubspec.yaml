@@ -41,8 +41,10 @@ dependencies:
   fl_chart: ^0.69.0
   flutter_markdown_plus: ^1.0.5
   intl: ^0.20.2
+  flutter_svg: ^2.0.10
   flutter:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -51,6 +53,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_native_splash: ^2.4.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -75,30 +78,57 @@ flutter:
      - assets/schools.json
      - assets/mock_stats.json
      - assets/.env
-  #   - images/a_dot_ham.jpeg
+     - assets/images/logo.png
+     - assets/images/logo.svg
 
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo.png" # Path to your high-res PNG
+  min_sdk_android: 21 # optional
+  # adaptive_icon_background: "#000000" # Useful for Android adaptive icons (dark mode)
+  # adaptive_icon_foreground: "assets/images/logo_foreground.png"
 
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
-
-  # To add custom fonts to your application, add a fonts section here,
-  # in this "flutter" section. Each entry in this list should have a
-  # "family" key with the font family name, and a "fonts" key with a
-  # list giving the asset and other descriptors for the font. For
-  # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
-  #
-  # For details regarding fonts from package dependencies,
-  # see https://flutter.dev/to/font-from-package
+flutter_native_splash:
+  # This package generates native code to customize Flutter's default white native splash screen
+  # with gradient background and logo that matches your loading screen
+  
+  # The image will be displayed at the center of the screen
+  image: assets/images/logo.png
+  
+  # Use fullscreen to enable background image with gradient
+  fullscreen: true
+  
+  # Background image with gradient (matches LoadingScreen gradient)
+  background_image: "assets/images/splash_background.png"
+  
+  # Fallback background color for platforms that don't support background images
+  color: "#2563EB"  # Your primary blue color
+  
+  # Dark mode configuration
+  image_dark: assets/images/logo.png
+  background_image_dark: "assets/images/splash_background_dark.png"
+  color_dark: "#1E40AF"  # Darker blue for dark mode
+  
+  # Android 12+ specific configuration
+  android_12:
+    image: assets/images/logo.png
+    color: "#2563EB"
+    icon_background_color: "#2563EB"
+    image_dark: assets/images/logo.png
+    color_dark: "#1E40AF"
+  
+  # iOS specific settings
+  ios: true
+  
+  # Web specific settings
+  web: true
+  
+  # Remove the default Flutter splash
+  android_gravity: center
+  ios_content_mode: center
+  web_image_mode: center
+  
+  # Info.plist settings for iOS
+  info_plist_files:
+    - 'ios/Runner/Info.plist'
