@@ -84,7 +84,7 @@ flutter:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/logo.png" # Path to your high-res PNG
+  image_path: "assets/images/logo_icon.png" # Path to your high-res PNG
   min_sdk_android: 21 # optional
   # adaptive_icon_background: "#000000" # Useful for Android adaptive icons (dark mode)
   # adaptive_icon_foreground: "assets/images/logo_foreground.png"
@@ -94,8 +94,8 @@ flutter_native_splash:
   # with gradient background and logo that matches your loading screen
   
   # The image will be displayed at the center of the screen
-  image: assets/images/logo.png
-  
+  image: assets/images/logo_icon.png
+
   # Use fullscreen to enable background image with gradient
   fullscreen: true
   
@@ -106,16 +106,16 @@ flutter_native_splash:
   color: "#2563EB"  # Your primary blue color
   
   # Dark mode configuration
-  image_dark: assets/images/logo.png
+  image_dark: assets/images/logo_icon.png
   background_image_dark: "assets/images/splash_background_dark.png"
   color_dark: "#1E40AF"  # Darker blue for dark mode
   
   # Android 12+ specific configuration
   android_12:
-    image: assets/images/logo.png
+    image: assets/images/logo_icon.png
     color: "#2563EB"
     icon_background_color: "#2563EB"
-    image_dark: assets/images/logo.png
+    image_dark: assets/images/logo_icon.png
     color_dark: "#1E40AF"
   
   # iOS specific settings

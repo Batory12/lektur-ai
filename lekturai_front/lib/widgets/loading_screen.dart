@@ -117,6 +117,28 @@ class _LoadingScreenState extends State<LoadingScreen>
                   ),
                 ),
 
+              // App Name
+              const SizedBox(height: 30),
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: const Text(
+                  'lekturAI',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 42,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black26,
+                        blurRadius: 10,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 60),
 
               // Loading Indicator
