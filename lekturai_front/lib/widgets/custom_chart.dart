@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:lekturai_front/theme/colors.dart';
 import 'package:lekturai_front/theme/spacing.dart';
 import 'package:lekturai_front/theme/text_styles.dart';
+import 'dart:math';
 
 /// Enum for chart types
-enum ChartType {
-  bar,
-  line,
-}
+enum ChartType { bar, line }
 
 /// Enum for time periods
 enum TimePeriod {
@@ -158,11 +156,8 @@ class CustomChart extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Title
-            Text(
-              title,
-              style: AppTextStyles.heading3,
-            ),
-            
+            Text(title, style: AppTextStyles.heading3),
+
             // Legend for multi-series charts
             if (multiSeries != null && multiSeries!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.md),
@@ -182,23 +177,17 @@ class CustomChart extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: AppSpacing.xs),
-                      Text(
-                        series.name,
-                        style: AppTextStyles.bodySmall,
-                      ),
+                      Text(series.name, style: AppTextStyles.bodySmall),
                     ],
                   );
                 }).toList(),
               ),
             ],
-            
+
             const SizedBox(height: AppSpacing.lg),
 
             // Chart
-            SizedBox(
-              height: height,
-              child: _buildChart(),
-            ),
+            SizedBox(height: height, child: _buildChart()),
 
             // Labels
             if (xAxisLabel != null || yAxisLabel != null) ...[
@@ -207,15 +196,9 @@ class CustomChart extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   if (yAxisLabel != null)
-                    Text(
-                      yAxisLabel!,
-                      style: AppTextStyles.bodySmall,
-                    ),
+                    Text(yAxisLabel!, style: AppTextStyles.bodySmall),
                   if (xAxisLabel != null)
-                    Text(
-                      xAxisLabel!,
-                      style: AppTextStyles.bodySmall,
-                    ),
+                    Text(xAxisLabel!, style: AppTextStyles.bodySmall),
                 ],
               ),
             ],
@@ -230,9 +213,7 @@ class CustomChart extends StatelessWidget {
       return Center(
         child: Text(
           'Brak danych do wyświetlenia',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.greyMedium,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.greyMedium),
         ),
       );
     }
@@ -251,16 +232,16 @@ class CustomChart extends StatelessWidget {
       return Center(
         child: Text(
           'Brak danych do wyświetlenia',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.greyMedium,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.greyMedium),
         ),
       );
     }
 
-    final maxValue = maxY ?? data.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+    final maxValue =
+        maxY ??
+        max(1.0, data.map((e) => e.value).reduce((a, b) => a > b ? a : b));
     final minValue = minY ?? 0;
-    
+
     // Prevent division by zero - use minimum value of 10 if maxValue is 0 or too small
     final safeMaxValue = maxValue < 0.1 ? 10.0 : maxValue;
 
@@ -279,7 +260,8 @@ class CustomChart extends StatelessWidget {
               // Safety check: ensure index is within bounds
               if (groupIndex < 0 || groupIndex >= data.length) return null;
               final dataPoint = data[groupIndex];
-              final tooltipText = tooltipBuilder?.call(dataPoint) ??
+              final tooltipText =
+                  tooltipBuilder?.call(dataPoint) ??
                   dataPoint.value.toStringAsFixed(0);
               return BarTooltipItem(
                 tooltipText,
@@ -324,18 +306,20 @@ class CustomChart extends StatelessWidget {
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
         ),
         gridData: FlGridData(
           show: showGrid,
           drawVerticalLine: false,
-          horizontalInterval: maxValue / 5,  // Changed from maxValue to safeMaxValue
+          horizontalInterval:
+              maxValue / 5, // Changed from maxValue to safeMaxValue
           getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: AppColors.border,
-              strokeWidth: 1,
-            );
+            return FlLine(color: AppColors.border, strokeWidth: 1);
           },
         ),
         borderData: FlBorderData(
@@ -379,24 +363,24 @@ class CustomChart extends StatelessWidget {
 
   Widget _buildLineChart() {
     // Use multiSeries if provided, otherwise use single data series
-    final seriesList = multiSeries ?? [
-      ChartDataSeries(
-        name: 'Data',
-        data: data,
-        color: primaryColor,
-        showDots: showDots,
-        lineWidth: 3,
-      ),
-    ];
-    
+    final seriesList =
+        multiSeries ??
+        [
+          ChartDataSeries(
+            name: 'Data',
+            data: data,
+            color: primaryColor,
+            showDots: showDots,
+            lineWidth: 3,
+          ),
+        ];
+
     // Safety check: ensure we have data
     if (seriesList.isEmpty || seriesList.every((s) => s.data.isEmpty)) {
       return Center(
         child: Text(
           'Brak danych do wyświetlenia',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.greyMedium,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.greyMedium),
         ),
       );
     }
@@ -405,12 +389,14 @@ class CustomChart extends StatelessWidget {
     final allValues = seriesList
         .expand((series) => series.data.map((point) => point.value))
         .toList();
-    
-    final maxValue = maxY ?? (allValues.isNotEmpty 
-        ? allValues.reduce((a, b) => a > b ? a : b) 
-        : 10.0);
+
+    final maxValue =
+        maxY ??
+        (allValues.isNotEmpty
+            ? allValues.reduce((a, b) => a > b ? a : b)
+            : 10.0);
     final minValue = minY ?? 0;
-    
+
     // Prevent division by zero - use minimum value of 10 if maxValue is 0 or too small
     final safeMaxValue = maxValue < 0.1 ? 10.0 : maxValue;
 
@@ -428,20 +414,21 @@ class CustomChart extends StatelessWidget {
               return touchedSpots.map((spot) {
                 final seriesIndex = spot.barIndex;
                 final pointIndex = spot.x.toInt();
-                
+
                 // Safety check: ensure indices are within bounds
                 if (seriesIndex < 0 || seriesIndex >= seriesList.length) {
                   return null;
                 }
-                
+
                 final series = seriesList[seriesIndex];
                 if (pointIndex < 0 || pointIndex >= series.data.length) {
                   return null;
                 }
-                
+
                 final dataPoint = series.data[pointIndex];
-                final tooltipText = '${series.name}\n${dataPoint.label}\n${dataPoint.value.toStringAsFixed(1)}';
-                
+                final tooltipText =
+                    '${series.name}\n${dataPoint.label}\n${dataPoint.value.toStringAsFixed(1)}';
+
                 return LineTooltipItem(
                   tooltipText,
                   AppTextStyles.bodySmall.copyWith(color: AppColors.white),
@@ -455,7 +442,9 @@ class CustomChart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: labelData.length > 10 ? (labelData.length / 7).ceilToDouble() : 1,
+              interval: labelData.length > 10
+                  ? (labelData.length / 7).ceilToDouble()
+                  : 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
                 // Safety check: ensure index is within bounds
@@ -484,18 +473,19 @@ class CustomChart extends StatelessWidget {
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
         ),
         gridData: FlGridData(
           show: showGrid,
           drawVerticalLine: false,
           horizontalInterval: safeMaxValue / 5,
           getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: AppColors.border,
-              strokeWidth: 1,
-            );
+            return FlLine(color: AppColors.border, strokeWidth: 1);
           },
         ),
         borderData: FlBorderData(
@@ -516,7 +506,9 @@ class CustomChart extends StatelessWidget {
             isStrokeCapRound: true,
             dotData: FlDotData(show: series.showDots),
             belowBarData: BarAreaData(
-              show: fillUnderLine && seriesList.length == 1, // Only fill for single series
+              show:
+                  fillUnderLine &&
+                  seriesList.length == 1, // Only fill for single series
               gradient: LinearGradient(
                 colors: [
                   series.color.withOpacity(0.3),
