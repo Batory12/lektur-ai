@@ -178,7 +178,7 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   Widget build(BuildContext context) {
     return const LoadingScreen(
-      message: 'Inicjalizacja aplikacji...',
+      message: 'Rozgrzewamy się...',
     );
   }
 }

@@ -157,7 +157,8 @@ class CustomChart extends StatelessWidget {
           children: [
             // Title
             Text(title, style: AppTextStyles.heading3),
-
+            
+            const SizedBox(height: AppSpacing.md),
             // Legend for multi-series charts
             if (multiSeries != null && multiSeries!.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.md),
