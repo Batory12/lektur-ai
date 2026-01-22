@@ -103,6 +103,7 @@ class QAState extends State<QuestionAnswerContainer> {
         evaluationTitle = "Ocena: ${grade.grade}";
         evalTextLoading = false;
         evalTitleLoading = false;
+        aiDetectionScore = grade.aiDetectionScore;
       });
     } else {
       final submit = ReadingExerciseSubmit(
