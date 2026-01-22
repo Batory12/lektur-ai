@@ -100,7 +100,7 @@ class QAState extends State<QuestionAnswerContainer> {
       setState(() {
         answerText = newAnswer;
         evaluationText = grade.feedback;
-        evaluationTitle = "Ocena: ${grade.grade}";
+        evaluationTitle = "Liczba punktów: ${grade.grade}";
         evalTextLoading = false;
         evalTitleLoading = false;
         aiDetectionScore = grade.aiDetectionScore;
